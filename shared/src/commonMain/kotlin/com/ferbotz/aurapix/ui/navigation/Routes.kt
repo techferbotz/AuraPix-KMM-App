@@ -2,17 +2,14 @@ package com.ferbotz.aurapix.ui.navigation
 
 import kotlinx.serialization.Serializable
 
-/** Type-safe navigation routes (Compose Navigation + kotlinx.serialization). */
-
 @Serializable
 object SplashRoute
 
-/** The bottom-navigation host (Feed / My Creations / Profile-or-Login). */
 @Serializable
 object HomeRoute
 
 @Serializable
-data class TemplateDetailRoute(val title: String)
+data class TemplateDetailRoute(val templateId: String, val title: String)
 
 @Serializable
 object UploadRoute
@@ -21,7 +18,7 @@ object UploadRoute
 object ProcessingRoute
 
 @Serializable
-object ResultRoute
+data class ResultRoute(val creationId: String)
 
 @Serializable
 object GenerationFailedRoute

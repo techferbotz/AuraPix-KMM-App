@@ -51,7 +51,9 @@ import com.ferbotz.aurapix.ui.theme.AuraTheme
 fun HistoryScreen(
     modifier: Modifier = Modifier,
     credits: Int = 50,
+    items: List<HistoryItem> = sampleHistory,
     onItemClick: (HistoryItem) -> Unit = {},
+    onRefresh: () -> Unit = {},
     selectedTab: AuraTab = AuraTab.MyCreations,
     onSelectTab: (AuraTab) -> Unit = {},
 ) {
@@ -84,7 +86,7 @@ fun HistoryScreen(
                     }
                 }
             }
-            items(sampleHistory.chunked(2)) { row ->
+            items(items.chunked(2)) { row ->
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     row.forEach { historyItem ->
                         HistoryCard(historyItem, Modifier.weight(1f), onClick = { onItemClick(historyItem) })
@@ -93,7 +95,7 @@ fun HistoryScreen(
                 }
             }
             item {
-                SecondaryButton("Load more", onClick = {}, modifier = Modifier.fillMaxWidth(), leadingIcon = Icons.Rounded.Refresh)
+                SecondaryButton("Load more", onClick = onRefresh, modifier = Modifier.fillMaxWidth(), leadingIcon = Icons.Rounded.Refresh)
             }
         }
     }
@@ -105,7 +107,7 @@ private fun HistoryCard(item: HistoryItem, modifier: Modifier = Modifier, onClic
         modifier = modifier.aspectRatio(0.85f).clip(AuraShapes.medium).clickable(onClick = onClick),
         contentAlignment = Alignment.BottomStart,
     ) {
-        NetworkImage(null, item.title, Modifier.fillMaxSize())
+        NetworkImage(item.imageUrl, item.title, Modifier.fillMaxSize())
         Box(
             Modifier.fillMaxSize().background(
                 Brush.verticalGradient(listOf(Color.Transparent, AuraTheme.colors.scrim))

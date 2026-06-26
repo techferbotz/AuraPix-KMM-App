@@ -6,9 +6,20 @@ package com.ferbotz.aurapix.ui.screens
  * NetworkImage placeholders render.
  */
 
-data class TemplateItem(val name: String, val premium: Boolean = false)
+data class TemplateItem(
+    val name: String,
+    val premium: Boolean = false,
+    val id: String = "",
+    val thumbnailUrl: String? = null,
+)
 
-data class HistoryItem(val title: String, val category: String)
+data class HistoryItem(
+    val title: String,
+    val category: String,
+    val id: String = "",
+    val imageUrl: String? = null,
+    val status: String = "COMPLETED",
+)
 
 data class PopularItem(val name: String, val category: String, val uses: String)
 

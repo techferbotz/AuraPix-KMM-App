@@ -52,6 +52,8 @@ import com.ferbotz.aurapix.ui.theme.AuraTheme
 fun HomeFeedScreen(
     modifier: Modifier = Modifier,
     credits: Int = 50,
+    categories: List<String> = sampleCategories,
+    templates: List<TemplateItem> = sampleTemplates,
     onCreate: () -> Unit = {},
     onTemplateClick: (TemplateItem) -> Unit = {},
     selectedTab: AuraTab = AuraTab.Feed,
@@ -93,9 +95,9 @@ fun HomeFeedScreen(
             }
             item {
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(sampleCategories.size) { index ->
+                    items(categories.size) { index ->
                         CategoryChip(
-                            text = sampleCategories[index],
+                            text = categories[index],
                             selected = selectedCategory == index,
                             onClick = { selectedCategory = index },
                         )
@@ -103,7 +105,7 @@ fun HomeFeedScreen(
                 }
             }
             item { SectionHeader("Templates") }
-            items(sampleTemplates.chunked(2)) { row ->
+            items(templates.chunked(2)) { row ->
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     row.forEach { template ->
                         TemplateCard(template, Modifier.weight(1f), onClick = { onTemplateClick(template) })
@@ -149,7 +151,7 @@ private fun TemplateCard(template: TemplateItem, modifier: Modifier = Modifier, 
             .clickable(onClick = onClick),
         contentAlignment = Alignment.BottomStart,
     ) {
-        NetworkImage(null, template.name, Modifier.fillMaxSize())
+        NetworkImage(template.thumbnailUrl, template.name, Modifier.fillMaxSize())
         Box(
             Modifier.fillMaxSize().background(
                 Brush.verticalGradient(listOf(androidx.compose.ui.graphics.Color.Transparent, AuraTheme.colors.scrim))

@@ -4,22 +4,19 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.ferbotz.aurapix.data.repository.AuthRepository
 
-/**
- * Minimal in-memory auth state. Drives the conditional Profile/Login tab: signed out by
- * default (guest browsing), flipped by Login's Google/Guest actions. Replace with a real
- * auth/session source later.
- */
 @Stable
-class AuthState {
-    var isLoggedIn by mutableStateOf(false)
+class AuthState(private val authRepository: AuthRepository) {
+    var isLoggedIn by mutableStateOf(authRepository.isLoggedIn)
         private set
 
-    fun login() {
+    fun onLoginSuccess() {
         isLoggedIn = true
     }
 
     fun logout() {
+        authRepository.logout()
         isLoggedIn = false
     }
 }
