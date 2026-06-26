@@ -1,74 +1,74 @@
 package com.ferbotz.aurapix.ui.viewmodel
 
-import com.ferbotz.aurapix.data.remote.dto.CategorySummaryDto
-import com.ferbotz.aurapix.data.remote.dto.FeedTrayDto
-import com.ferbotz.aurapix.data.remote.dto.TemplateSummaryDto
-import com.ferbotz.aurapix.data.repository.CategoriesRepository
+import com.ferbotz.aurapix.data.common.DataState
+import com.ferbotz.aurapix.data.model.FeedTray
+import com.ferbotz.aurapix.data.model.TrayType
 import com.ferbotz.aurapix.data.repository.FeedRepository
 import com.ferbotz.aurapix.data.repository.ProfileRepository
+import com.ferbotz.aurapix.ui.screens.CategoryItem
+import com.ferbotz.aurapix.ui.screens.FeedSection
+import com.ferbotz.aurapix.ui.screens.FeedSectionKind
+import com.ferbotz.aurapix.ui.screens.TemplateItem
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class HomeFeedViewModel(
-    private val feedRepository: FeedRepository,
-    private val categoriesRepository: CategoriesRepository,
+    feedRepository: FeedRepository,
     private val profileRepository: ProfileRepository,
 ) : AuraViewModel() {
 
-    private val _traysState = MutableStateFlow<UiState<List<FeedTrayDto>>>(UiState.Loading)
-    val traysState: StateFlow<UiState<List<FeedTrayDto>>> = _traysState.asStateFlow()
+    private val refreshTrigger = MutableStateFlow(0)
 
-    private val _categoriesState = MutableStateFlow<UiState<List<CategorySummaryDto>>>(UiState.Loading)
-    val categoriesState: StateFlow<UiState<List<CategorySummaryDto>>> = _categoriesState.asStateFlow()
+    /** The full feed as ordered, typed sections — Loading/Success/Error for the screen. */
+    val feedState: StateFlow<UiState<List<FeedSection>>> =
+        refreshTrigger
+            .flatMapLatest { feedRepository.getFeed() }
+            .map { state -> state.toUiState { trays -> trays.mapNotNull { it.toSectionOrNull() } } }
+            .stateIn(scope, SharingStarted.WhileSubscribed(5_000), UiState.Loading)
 
-    private val _credits = MutableStateFlow(profileRepository.getCachedCredits())
-    val credits: StateFlow<Int> = _credits.asStateFlow()
+    /** Credits badge in the top bar. Falls back to the cached value when offline / not signed in. */
+    val credits: StateFlow<Int> =
+        refreshTrigger
+            .flatMapLatest { profileRepository.getCredits() }
+            .map { state -> (state as? DataState.Success)?.data?.totalCredits ?: profileRepository.cachedCredits }
+            .stateIn(scope, SharingStarted.WhileSubscribed(5_000), profileRepository.cachedCredits)
 
-    init {
-        load()
+    fun refresh() {
+        refreshTrigger.value += 1
     }
+}
 
-    fun load() {
-        scope.launch {
-            _traysState.value = UiState.Loading
-            feedRepository.getFeed().fold(
-                onSuccess = { _traysState.value = UiState.Success(it.trays) },
-                onFailure = { _traysState.value = UiState.Error(it.toApiError()) },
+/** Maps a decoded [FeedTray] to a presentation [FeedSection]; drops unknown/empty trays. */
+private fun FeedTray.toSectionOrNull(): FeedSection? = when (type) {
+    TrayType.TEMPLATE -> templates
+        .takeIf { it.isNotEmpty() }
+        ?.let { list ->
+            FeedSection(
+                id = id,
+                title = title,
+                kind = FeedSectionKind.TEMPLATES,
+                templates = list.map {
+                    TemplateItem(name = it.title, id = it.id, thumbnailUrl = it.thumbnailImageUrl, trending = it.isTrending)
+                },
             )
         }
-        scope.launch {
-            _categoriesState.value = UiState.Loading
-            categoriesRepository.getCategories().fold(
-                onSuccess = { _categoriesState.value = UiState.Success(it) },
-                onFailure = { _categoriesState.value = UiState.Error(it.toApiError()) },
+
+    TrayType.CATEGORY -> categories
+        .takeIf { it.isNotEmpty() }
+        ?.let { list ->
+            FeedSection(
+                id = id,
+                title = title,
+                kind = FeedSectionKind.CATEGORIES,
+                categories = list.map { CategoryItem(id = it.id, name = it.name, iconUrl = it.iconUrl) },
             )
         }
-        scope.launch {
-            profileRepository.getCredits().onSuccess {
-                _credits.value = it.totalCredits
-            }
-        }
-    }
 
-    /** Extracts TemplateSummaryDto list from a TEMPLATE tray's JSON items. */
-    fun templateItems(tray: FeedTrayDto): List<TemplateSummaryDto> =
-        tray.items.mapNotNull { element ->
-            try {
-                com.ferbotz.aurapix.data.remote.auraJson.decodeFromJsonElement(
-                    TemplateSummaryDto.serializer(), element
-                )
-            } catch (_: Exception) { null }
-        }
-
-    /** Extracts CategorySummaryDto list from a CATEGORY tray's JSON items. */
-    fun categoryItems(tray: FeedTrayDto): List<CategorySummaryDto> =
-        tray.items.mapNotNull { element ->
-            try {
-                com.ferbotz.aurapix.data.remote.auraJson.decodeFromJsonElement(
-                    CategorySummaryDto.serializer(), element
-                )
-            } catch (_: Exception) { null }
-        }
+    TrayType.UNKNOWN -> null
 }

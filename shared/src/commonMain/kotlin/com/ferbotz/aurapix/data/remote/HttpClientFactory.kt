@@ -14,8 +14,8 @@ import io.ktor.http.HttpHeaders
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 
-const val AURA_BASE_URL = "https://api.aurapix.app/api/v1/"
-const val AURA_HEALTH_URL = "https://api.aurapix.app/health"
+const val AURA_BASE_URL = "http://13.205.128.80/api/v1/"
+const val AURA_HEALTH_URL = "http://13.205.128.80/health"
 
 val auraJson: Json = Json {
     ignoreUnknownKeys = true

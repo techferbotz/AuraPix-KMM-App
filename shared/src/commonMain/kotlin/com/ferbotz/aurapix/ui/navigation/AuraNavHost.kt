@@ -1,5 +1,7 @@
 package com.ferbotz.aurapix.ui.navigation
 
+import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
@@ -9,9 +11,11 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -23,7 +27,6 @@ import com.ferbotz.aurapix.ui.components.AuraTab
 import com.ferbotz.aurapix.ui.components.WebViewScreen
 import com.ferbotz.aurapix.ui.screens.CreditsSuccessScreen
 import com.ferbotz.aurapix.ui.screens.GenerationFailedScreen
-import com.ferbotz.aurapix.ui.screens.HistoryItem
 import com.ferbotz.aurapix.ui.screens.HelpFaqScreen
 import com.ferbotz.aurapix.ui.screens.HistoryScreen
 import com.ferbotz.aurapix.ui.screens.HomeFeedScreen
@@ -37,15 +40,14 @@ import com.ferbotz.aurapix.ui.screens.SettingsScreen
 import com.ferbotz.aurapix.ui.screens.SplashScreen
 import com.ferbotz.aurapix.ui.screens.SubscriptionSuccessScreen
 import com.ferbotz.aurapix.ui.screens.TemplateDetailScreen
-import com.ferbotz.aurapix.ui.screens.TemplateItem
 import com.ferbotz.aurapix.ui.screens.UploadPhotosScreen
-import com.ferbotz.aurapix.ui.viewmodel.GenerationViewModel
 import com.ferbotz.aurapix.ui.viewmodel.HistoryViewModel
 import com.ferbotz.aurapix.ui.viewmodel.HomeFeedViewModel
 import com.ferbotz.aurapix.ui.viewmodel.ProfileViewModel
 import com.ferbotz.aurapix.ui.viewmodel.TemplateDetailViewModel
 import com.ferbotz.aurapix.ui.viewmodel.UiState
 import kotlinx.coroutines.delay
+import kotlin.random.Random
 
 private const val PRIVACY_URL = "https://policies.google.com/privacy"
 private const val TERMS_URL = "https://policies.google.com/terms"
@@ -56,10 +58,6 @@ fun AuraNavHost(
     navController: NavHostController = rememberNavController(),
     auth: AuthState = remember { AuthState(DataModule.authRepository) },
 ) {
-    // GenerationViewModel lives here so it survives Upload → Processing → Result transitions.
-    val generationVm = remember { GenerationViewModel(DataModule.creationsRepository) }
-    DisposableEffect(Unit) { onDispose { generationVm.onCleared() } }
-
     NavHost(navController = navController, startDestination = SplashRoute) {
         composable<SplashRoute> {
             SplashScreen()
@@ -69,23 +67,18 @@ fun AuraNavHost(
             }
         }
 
-        composable<HomeRoute> { HomeContainer(navController, auth, generationVm) }
+        composable<HomeRoute> { HomeContainer(navController, auth) }
 
         composable<TemplateDetailRoute> { entry ->
             val route = entry.toRoute<TemplateDetailRoute>()
             val vm = remember { TemplateDetailViewModel(DataModule.templatesRepository) }
-            DisposableEffect(route.templateId) { onDispose { vm.onCleared() } }
+            DisposableEffect(Unit) { onDispose { vm.onCleared() } }
             LaunchedEffect(route.templateId) { vm.load(route.templateId) }
-            val state by vm.templateState.collectAsState()
+            // templateState is collected for detail/imageSlots once the upload feature lands.
             TemplateDetailScreen(
                 title = route.title,
                 onBack = { navController.popBackStack() },
-                onGenerate = {
-                    val detail = (state as? UiState.Success)?.data
-                    if (detail != null) {
-                        navController.navigate(UploadRoute)
-                    }
-                },
+                onGenerate = { navController.navigate(UploadRoute) },
             )
         }
 
@@ -97,52 +90,29 @@ fun AuraNavHost(
         }
 
         composable<ProcessingRoute> {
-            val pollingState by generationVm.pollingState.collectAsState()
-            LaunchedEffect(pollingState) {
-                when (val s = pollingState) {
-                    is UiState.Success -> {
-                        val creationId = s.data.id
-                        if (s.data.status == "COMPLETED") {
-                            navController.navigate(ResultRoute(creationId)) {
-                                popUpTo(HomeRoute) { inclusive = false }
-                            }
-                        } else {
-                            navController.navigate(GenerationFailedRoute) {
-                                popUpTo(HomeRoute) { inclusive = false }
-                            }
-                        }
-                    }
-                    is UiState.Error -> {
-                        navController.navigate(GenerationFailedRoute) {
-                            popUpTo(HomeRoute) { inclusive = false }
-                        }
-                    }
-                    else -> {}
+            // Stub progress until the image-picker + GenerationViewModel wiring lands.
+            var progress by remember { mutableFloatStateOf(0f) }
+            val willSucceed = remember { Random.nextFloat() < 0.85f }
+            LaunchedEffect(Unit) {
+                animate(0f, 1f, animationSpec = tween(durationMillis = 2600)) { value, _ -> progress = value }
+                navController.navigate(if (willSucceed) ResultRoute("") else GenerationFailedRoute) {
+                    popUpTo(HomeRoute) { inclusive = false }
                 }
             }
-            ProcessingScreen(progress = if (pollingState is UiState.Loading) 0f else 0.5f)
+            ProcessingScreen(progress = progress)
         }
 
-        composable<ResultRoute> { entry ->
-            val route = entry.toRoute<ResultRoute>()
+        composable<ResultRoute> {
             ResultScreen(
                 onBack = { navController.popBackStack(HomeRoute, inclusive = false) },
-                onRetry = {
-                    generationVm.reset()
-                    navController.navigate(UploadRoute) {
-                        popUpTo(HomeRoute) { inclusive = false }
-                    }
-                },
+                onRetry = { navController.navigate(ProcessingRoute) },
             )
         }
 
         composable<GenerationFailedRoute> {
             GenerationFailedScreen(
                 onRetry = {
-                    generationVm.reset()
-                    navController.navigate(UploadRoute) {
-                        popUpTo(GenerationFailedRoute) { inclusive = true }
-                    }
+                    navController.navigate(ProcessingRoute) { popUpTo(GenerationFailedRoute) { inclusive = true } }
                 },
                 onGoHome = { navController.popBackStack(HomeRoute, inclusive = false) },
             )
@@ -206,57 +176,36 @@ fun AuraNavHost(
 }
 
 @Composable
-private fun HomeContainer(
-    navController: NavHostController,
-    auth: AuthState,
-    generationVm: GenerationViewModel,
-) {
+private fun HomeContainer(navController: NavHostController, auth: AuthState) {
     var tab by remember { mutableStateOf(AuraTab.Feed) }
 
     when (tab) {
         AuraTab.Feed -> {
             val vm = remember {
-                HomeFeedViewModel(DataModule.feedRepository, DataModule.categoriesRepository, DataModule.profileRepository)
+                HomeFeedViewModel(DataModule.feedRepository, DataModule.profileRepository)
             }
             DisposableEffect(Unit) { onDispose { vm.onCleared() } }
-            val traysState by vm.traysState.collectAsState()
-            val categoriesState by vm.categoriesState.collectAsState()
+            val feedState by vm.feedState.collectAsState()
             val credits by vm.credits.collectAsState()
-
-            val categoryNames = (categoriesState as? UiState.Success)?.data?.map { it.name } ?: emptyList()
-            val templateItems = (traysState as? UiState.Success)?.data
-                ?.firstOrNull { it.type == "TEMPLATE" }
-                ?.let { tray -> vm.templateItems(tray).map { t -> TemplateItem(name = t.title, id = t.id, thumbnailUrl = t.thumbnailImageUrl) } }
-                ?: emptyList()
 
             HomeFeedScreen(
                 credits = credits,
-                categories = categoryNames,
-                templates = templateItems,
+                feedState = feedState,
                 selectedTab = tab,
                 onSelectTab = { tab = it },
                 onCreate = { navController.navigate(UploadRoute) },
                 onTemplateClick = { navController.navigate(TemplateDetailRoute(it.id, it.name)) },
+                onRetry = { vm.refresh() },
             )
         }
 
         AuraTab.MyCreations -> {
             val vm = remember { HistoryViewModel(DataModule.creationsRepository) }
             DisposableEffect(Unit) { onDispose { vm.onCleared() } }
-            val creations by vm.creationsFlow.collectAsState(initial = emptyList())
-
-            val historyItems = creations.map { entity ->
-                HistoryItem(
-                    id = entity.id,
-                    title = entity.templateTitleSnapshot,
-                    category = entity.status,
-                    imageUrl = entity.generatedImageUrl,
-                    status = entity.status,
-                )
-            }
+            val state by vm.state.collectAsState()
 
             HistoryScreen(
-                items = historyItems,
+                items = (state as? UiState.Success)?.data ?: emptyList(),
                 selectedTab = tab,
                 onSelectTab = { tab = it },
                 onItemClick = { navController.navigate(ResultRoute(it.id)) },
@@ -268,8 +217,8 @@ private fun HomeContainer(
             val vm = remember { ProfileViewModel(DataModule.profileRepository, DataModule.authRepository) }
             DisposableEffect(Unit) { onDispose { vm.onCleared() } }
             val profileState by vm.profileState.collectAsState()
-
             val profile = (profileState as? UiState.Success)?.data
+
             ProfileScreen(
                 name = profile?.displayName ?: "...",
                 credits = profile?.credits?.totalCredits ?: DataModule.preferences.cachedCredits,
@@ -291,9 +240,9 @@ private fun HomeContainer(
                 containerColor = MaterialTheme.colorScheme.background,
             ) { innerPadding ->
                 LoginScreen(
-                    modifier = androidx.compose.ui.Modifier.fillMaxSize().padding(innerPadding),
-                    // Google sign-in: the platform layer handles token acquisition and calls
-                    // AuthRepository.loginWithGoogle(idToken) before invoking this callback.
+                    modifier = Modifier.fillMaxSize().padding(innerPadding),
+                    // Google sign-in: the platform layer acquires the idToken and calls
+                    // AuthRepository.loginWithGoogle before this success callback fires.
                     onGoogleSignIn = { auth.onLoginSuccess() },
                     onContinueAsGuest = { auth.onLoginSuccess() },
                 )

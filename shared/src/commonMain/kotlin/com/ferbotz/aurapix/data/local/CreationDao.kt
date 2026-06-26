@@ -12,6 +12,9 @@ interface CreationDao {
     @Query("SELECT * FROM creations ORDER BY createdAt DESC LIMIT 100")
     fun observeAll(): Flow<List<CreationEntity>>
 
+    @Query("SELECT COUNT(*) FROM creations")
+    suspend fun count(): Int
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(items: List<CreationEntity>)
 

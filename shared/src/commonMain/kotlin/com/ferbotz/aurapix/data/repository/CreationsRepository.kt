@@ -1,42 +1,77 @@
 package com.ferbotz.aurapix.data.repository
 
+import com.ferbotz.aurapix.data.common.DataState
 import com.ferbotz.aurapix.data.local.CreationDao
 import com.ferbotz.aurapix.data.local.CreationEntity
 import com.ferbotz.aurapix.data.remote.AuraApi
+import com.ferbotz.aurapix.data.remote.asApiError
 import com.ferbotz.aurapix.data.remote.dto.CreationDetailDto
 import com.ferbotz.aurapix.data.remote.dto.CreationDto
-import com.ferbotz.aurapix.data.remote.dto.GenerationStartDto
-import com.ferbotz.aurapix.data.remote.dto.PagedResponse
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.launch
 
+/**
+ * Offline-first creations + the generate/poll flow.
+ *
+ * [observeCreations] is the source of truth: it mirrors the Room cache (so the screen updates
+ * live as rows change) and kicks off a network refresh, surfacing an error only when there is
+ * nothing cached to show.
+ */
 class CreationsRepository(
     private val api: AuraApi,
     private val dao: CreationDao,
 ) {
-    fun observeCreations(): Flow<List<CreationEntity>> = dao.observeAll()
-
-    suspend fun refreshCreations(page: Int = 1): Result<PagedResponse<CreationDto>> {
-        val result = api.getCreations(page)
-        result.onSuccess { paged ->
-            if (page == 1) dao.clear()
-            dao.upsertAll(paged.items.map { it.toEntity() })
+    fun observeCreations(): Flow<DataState<List<CreationEntity>>> = channelFlow {
+        send(DataState.Loading)
+        // Mirror the local cache — keeps emitting as the DB changes (refresh, poll updates).
+        launch {
+            dao.observeAll().collect { send(DataState.Success(it)) }
         }
-        return result
-    }
+        // Refresh from network; only surface the error if we have no cache to fall back on.
+        api.getCreations().fold(
+            onSuccess = { paged ->
+                dao.clear()
+                dao.upsertAll(paged.items.map { it.toEntity() })
+            },
+            onFailure = { if (dao.count() == 0) send(DataState.Error(it.asApiError())) },
+        )
+    }.flowOn(Dispatchers.Default)
 
-    suspend fun generate(templateId: String, images: List<ByteArray>): Result<GenerationStartDto> =
-        api.generate(templateId, images)
+    /**
+     * Starts a generation, then long-polls the creation until it is COMPLETED/FAILED,
+     * upserting each snapshot into the cache. Emits the terminal creation as Success.
+     */
+    fun generateAndPoll(templateId: String, images: List<ByteArray>): Flow<DataState<CreationDetailDto>> = flow {
+        emit(DataState.Loading)
+        val start = api.generate(templateId, images).fold(
+            onSuccess = { it },
+            onFailure = { emit(DataState.Error(it.asApiError())); null },
+        ) ?: return@flow
 
-    suspend fun pollCreation(creationId: String): Result<CreationDetailDto> {
-        val result = api.getCreation(creationId, wait = true)
-        result.onSuccess { detail ->
-            dao.upsertAll(listOf(detail.toEntity()))
+        while (true) {
+            val keepPolling = api.getCreation(start.creationId, wait = true).fold(
+                onSuccess = { detail ->
+                    dao.upsertAll(listOf(detail.toEntity()))
+                    when (detail.status) {
+                        "COMPLETED", "FAILED" -> {
+                            emit(DataState.Success(detail))
+                            false
+                        }
+                        else -> true // still PROCESSING — long-poll returned early, keep going
+                    }
+                },
+                onFailure = {
+                    emit(DataState.Error(it.asApiError()))
+                    false
+                },
+            )
+            if (!keepPolling) return@flow
         }
-        return result
-    }
-
-    suspend fun getCreation(creationId: String): Result<CreationDetailDto> =
-        api.getCreation(creationId, wait = false)
+    }.flowOn(Dispatchers.Default)
 
     suspend fun deleteCreation(id: String) = dao.deleteById(id)
 }

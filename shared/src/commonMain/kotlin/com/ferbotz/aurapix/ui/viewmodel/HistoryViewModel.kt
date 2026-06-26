@@ -2,32 +2,37 @@ package com.ferbotz.aurapix.ui.viewmodel
 
 import com.ferbotz.aurapix.data.local.CreationEntity
 import com.ferbotz.aurapix.data.repository.CreationsRepository
-import kotlinx.coroutines.flow.Flow
+import com.ferbotz.aurapix.ui.screens.HistoryItem
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class HistoryViewModel(
-    private val creationsRepository: CreationsRepository,
+    creationsRepository: CreationsRepository,
 ) : AuraViewModel() {
 
-    val creationsFlow: Flow<List<CreationEntity>> = creationsRepository.observeCreations()
+    private val refreshTrigger = MutableStateFlow(0)
 
-    private val _refreshState = MutableStateFlow<UiState<Unit>>(UiState.Loading)
-    val refreshState: StateFlow<UiState<Unit>> = _refreshState.asStateFlow()
-
-    init {
-        refresh()
-    }
+    val state: StateFlow<UiState<List<HistoryItem>>> =
+        refreshTrigger
+            .flatMapLatest { creationsRepository.observeCreations() }
+            .map { dataState -> dataState.toUiState { list -> list.map { it.toHistoryItem() } } }
+            .stateIn(scope, SharingStarted.WhileSubscribed(5_000), UiState.Loading)
 
     fun refresh() {
-        scope.launch {
-            _refreshState.value = UiState.Loading
-            creationsRepository.refreshCreations().fold(
-                onSuccess = { _refreshState.value = UiState.Success(Unit) },
-                onFailure = { _refreshState.value = UiState.Error(it.toApiError()) },
-            )
-        }
+        refreshTrigger.value += 1
     }
 }
+
+private fun CreationEntity.toHistoryItem() = HistoryItem(
+    title = templateTitleSnapshot,
+    category = status,
+    id = id,
+    imageUrl = generatedImageUrl,
+    status = status,
+)

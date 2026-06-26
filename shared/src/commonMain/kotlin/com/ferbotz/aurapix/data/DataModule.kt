@@ -6,6 +6,7 @@ import com.ferbotz.aurapix.data.local.databaseBuilder
 import com.ferbotz.aurapix.data.prefs.AppPreferences
 import com.ferbotz.aurapix.data.remote.AuraApi
 import com.ferbotz.aurapix.data.remote.createHttpClient
+import com.ferbotz.aurapix.data.remote.datasource.FeedRemoteDataSource
 import com.ferbotz.aurapix.data.repository.AuthRepository
 import com.ferbotz.aurapix.data.repository.CategoriesRepository
 import com.ferbotz.aurapix.data.repository.CreationsRepository
@@ -31,7 +32,9 @@ object DataModule {
 
     val profileRepository: ProfileRepository by lazy { ProfileRepository(api, preferences) }
 
-    val feedRepository: FeedRepository by lazy { FeedRepository(api) }
+    val feedRemoteDataSource: FeedRemoteDataSource by lazy { FeedRemoteDataSource(httpClient) }
+
+    val feedRepository: FeedRepository by lazy { FeedRepository(feedRemoteDataSource) }
 
     val categoriesRepository: CategoriesRepository by lazy { CategoriesRepository(api) }
 

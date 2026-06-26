@@ -1,64 +1,38 @@
 package com.ferbotz.aurapix.ui.viewmodel
 
-import com.ferbotz.aurapix.data.remote.ApiError
 import com.ferbotz.aurapix.data.remote.dto.CreationDetailDto
 import com.ferbotz.aurapix.data.repository.CreationsRepository
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class GenerationViewModel(
-    private val creationsRepository: CreationsRepository,
+    creationsRepository: CreationsRepository,
 ) : AuraViewModel() {
 
-    private val _generateState = MutableStateFlow<UiState<String>>(UiState.Loading)
-    /** State for the upload/generate step. Success holds the creationId. */
-    val generateState: StateFlow<UiState<String>> = _generateState.asStateFlow()
+    private data class Request(val templateId: String, val images: List<ByteArray>)
 
-    private val _pollingState = MutableStateFlow<UiState<CreationDetailDto>>(UiState.Loading)
-    /** State for the polling step. Success holds the completed/failed creation. */
-    val pollingState: StateFlow<UiState<CreationDetailDto>> = _pollingState.asStateFlow()
+    private val request = MutableStateFlow<Request?>(null)
+
+    /** Idle until [generate]; then Loading while generating + polling; Success holds the terminal creation. */
+    val state: StateFlow<UiState<CreationDetailDto>> =
+        request
+            .filterNotNull()
+            .flatMapLatest { creationsRepository.generateAndPoll(it.templateId, it.images) }
+            .map { it.toUiState() }
+            .stateIn(scope, SharingStarted.WhileSubscribed(5_000), UiState.Idle)
 
     fun generate(templateId: String, images: List<ByteArray>) {
-        scope.launch {
-            _generateState.value = UiState.Loading
-            creationsRepository.generate(templateId, images).fold(
-                onSuccess = { response ->
-                    _generateState.value = UiState.Success(response.creationId)
-                    pollUntilDone(response.creationId)
-                },
-                onFailure = { _generateState.value = UiState.Error(it.toApiError()) },
-            )
-        }
-    }
-
-    fun pollUntilDone(creationId: String) {
-        scope.launch {
-            _pollingState.value = UiState.Loading
-            while (true) {
-                val result = creationsRepository.pollCreation(creationId)
-                result.fold(
-                    onSuccess = { detail ->
-                        when (detail.status) {
-                            "COMPLETED", "FAILED" -> {
-                                _pollingState.value = UiState.Success(detail)
-                                return@launch
-                            }
-                            else -> { /* still PROCESSING — long-poll returned early, loop */ }
-                        }
-                    },
-                    onFailure = {
-                        _pollingState.value = UiState.Error(it.toApiError())
-                        return@launch
-                    },
-                )
-            }
-        }
+        request.value = Request(templateId, images)
     }
 
     fun reset() {
-        _generateState.value = UiState.Loading
-        _pollingState.value = UiState.Loading
+        request.value = null
     }
 }

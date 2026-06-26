@@ -3,6 +3,7 @@ package com.ferbotz.aurapix.data.remote
 import com.ferbotz.aurapix.data.remote.dto.ApiResponse
 import io.ktor.client.call.body
 import io.ktor.client.statement.HttpResponse
+import kotlin.coroutines.cancellation.CancellationException
 
 /**
  * Parses the `{ success, data, errorCode, message }` envelope.
@@ -18,10 +19,14 @@ suspend inline fun <reified T> HttpResponse.unwrap(): T {
 
 /**
  * Executes [block], converts any [ApiError] or network exception into a failed [Result].
+ * Rethrows [CancellationException] so coroutine cancellation (e.g. stopping a poll loop)
+ * is never swallowed into a fake error.
  */
 suspend inline fun <reified T> safeApiCall(block: suspend () -> HttpResponse): Result<T> =
     try {
         Result.success(block().unwrap())
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: ApiError) {
         Result.failure(e)
     } catch (e: Exception) {

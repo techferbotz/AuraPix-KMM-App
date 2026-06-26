@@ -11,6 +11,7 @@ data class TemplateItem(
     val premium: Boolean = false,
     val id: String = "",
     val thumbnailUrl: String? = null,
+    val trending: Boolean = false,
 )
 
 data class HistoryItem(

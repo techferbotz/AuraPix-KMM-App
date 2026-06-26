@@ -28,3 +28,6 @@ fun String.toApiError(message: String): ApiError = when (this) {
     "GENERATION_FAILED"    -> ApiError.GenerationFailed
     else                   -> ApiError.InternalError
 }
+
+/** Normalizes any throwable from a failed [Result] into an [ApiError]. */
+fun Throwable.asApiError(): ApiError = this as? ApiError ?: ApiError.NetworkError(this)

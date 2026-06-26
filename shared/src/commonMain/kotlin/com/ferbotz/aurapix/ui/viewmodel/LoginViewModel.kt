@@ -1,25 +1,31 @@
 package com.ferbotz.aurapix.ui.viewmodel
 
 import com.ferbotz.aurapix.data.repository.AuthRepository
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class LoginViewModel(
-    private val authRepository: AuthRepository,
+    authRepository: AuthRepository,
 ) : AuraViewModel() {
 
-    private val _loginState = MutableStateFlow<UiState<Unit>>(UiState.Loading)
-    val loginState: StateFlow<UiState<Unit>> = _loginState.asStateFlow()
+    private val idToken = MutableStateFlow<String?>(null)
 
-    fun loginWithGoogle(idToken: String) {
-        scope.launch {
-            _loginState.value = UiState.Loading
-            authRepository.loginWithGoogle(idToken).fold(
-                onSuccess = { _loginState.value = UiState.Success(Unit) },
-                onFailure = { _loginState.value = UiState.Error(it.toApiError()) },
-            )
-        }
+    /** Idle until [login]; Loading while exchanging the token; Success once the JWT is stored. */
+    val loginState: StateFlow<UiState<Unit>> =
+        idToken
+            .filterNotNull()
+            .flatMapLatest { authRepository.loginWithGoogle(it) }
+            .map { state -> state.toUiState { } }
+            .stateIn(scope, SharingStarted.WhileSubscribed(5_000), UiState.Idle)
+
+    fun login(googleIdToken: String) {
+        idToken.value = googleIdToken
     }
 }

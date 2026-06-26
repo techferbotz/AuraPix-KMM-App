@@ -5,7 +5,6 @@ import com.ferbotz.aurapix.data.remote.dto.CategorySummaryDto
 import com.ferbotz.aurapix.data.remote.dto.CreditsDto
 import com.ferbotz.aurapix.data.remote.dto.CreationDetailDto
 import com.ferbotz.aurapix.data.remote.dto.CreationDto
-import com.ferbotz.aurapix.data.remote.dto.FeedResponseDto
 import com.ferbotz.aurapix.data.remote.dto.GenerationStartDto
 import com.ferbotz.aurapix.data.remote.dto.HealthDto
 import com.ferbotz.aurapix.data.remote.dto.PagedResponse
@@ -46,16 +45,7 @@ class AuraApi(private val client: HttpClient) {
     suspend fun getCredits(): Result<CreditsDto> =
         safeApiCall { client.get("credits") }
 
-    // ── Feed ──────────────────────────────────────────────────────────────────
-
-    suspend fun getFeed(): Result<FeedResponseDto> =
-        safeApiCall { client.get("feed") }
-
-    suspend fun getTrayTemplates(trayId: String, page: Int = 1, limit: Int = 20): Result<PagedResponse<TemplateSummaryDto>> =
-        safeApiCall { client.get("feed/trays/$trayId") { parameter("page", page); parameter("limit", limit) } }
-
-    suspend fun getTrayCategories(trayId: String, page: Int = 1, limit: Int = 20): Result<PagedResponse<CategorySummaryDto>> =
-        safeApiCall { client.get("feed/trays/$trayId") { parameter("page", page); parameter("limit", limit) } }
+    // ── Feed: see FeedRemoteDataSource ──────────────────────────────────────────
 
     // ── Categories ────────────────────────────────────────────────────────────
 

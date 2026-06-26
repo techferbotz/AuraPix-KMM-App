@@ -2,25 +2,30 @@ package com.ferbotz.aurapix.ui.viewmodel
 
 import com.ferbotz.aurapix.data.remote.dto.TemplateDetailDto
 import com.ferbotz.aurapix.data.repository.TemplatesRepository
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class TemplateDetailViewModel(
-    private val templatesRepository: TemplatesRepository,
+    templatesRepository: TemplatesRepository,
 ) : AuraViewModel() {
 
-    private val _templateState = MutableStateFlow<UiState<TemplateDetailDto>>(UiState.Loading)
-    val templateState: StateFlow<UiState<TemplateDetailDto>> = _templateState.asStateFlow()
+    private val templateId = MutableStateFlow<String?>(null)
 
-    fun load(templateId: String) {
-        scope.launch {
-            _templateState.value = UiState.Loading
-            templatesRepository.getTemplate(templateId).fold(
-                onSuccess = { _templateState.value = UiState.Success(it) },
-                onFailure = { _templateState.value = UiState.Error(it.toApiError()) },
-            )
-        }
+    val templateState: StateFlow<UiState<TemplateDetailDto>> =
+        templateId
+            .filterNotNull()
+            .flatMapLatest { templatesRepository.getTemplate(it) }
+            .map { it.toUiState() }
+            .stateIn(scope, SharingStarted.WhileSubscribed(5_000), UiState.Loading)
+
+    fun load(id: String) {
+        templateId.value = id
     }
 }
