@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccountCircle
-import androidx.compose.material.icons.rounded.PersonOutline
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,15 +23,15 @@ import androidx.compose.ui.unit.dp
 import com.ferbotz.aurapix.core.ui.components.AmbientGlow
 import com.ferbotz.aurapix.core.ui.components.BrandMark
 import com.ferbotz.aurapix.core.ui.components.PrimaryButton
-import com.ferbotz.aurapix.core.ui.components.SecondaryButton
 import com.ferbotz.aurapix.core.ui.theme.AuraPixTheme
 
-/** Authentication entry: brand lockup, Google sign-in and guest continue. */
+/** Authentication entry: brand lockup and Google sign-in. */
 @Composable
 fun LoginScreen(
     modifier: Modifier = Modifier,
+    loading: Boolean = false,
+    errorMessage: String? = null,
     onGoogleSignIn: () -> Unit = {},
-    onContinueAsGuest: () -> Unit = {},
 ) {
     Box(
         modifier = modifier
@@ -61,15 +60,19 @@ fun LoginScreen(
                 text = "Continue with Google",
                 onClick = onGoogleSignIn,
                 modifier = Modifier.fillMaxWidth(),
+                enabled = !loading,
+                loading = loading,
                 leadingIcon = Icons.Rounded.AccountCircle,
             )
-            Spacer(Modifier.height(12.dp))
-            SecondaryButton(
-                text = "Continue as Guest",
-                onClick = onContinueAsGuest,
-                modifier = Modifier.fillMaxWidth(),
-                leadingIcon = Icons.Rounded.PersonOutline,
-            )
+            if (errorMessage != null) {
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    errorMessage,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                    textAlign = TextAlign.Center,
+                )
+            }
             Spacer(Modifier.height(32.dp))
             Text(
                 "By continuing you agree to our Privacy Policy and Terms of Service.",

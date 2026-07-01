@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Refresh
@@ -20,11 +19,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,11 +27,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.ferbotz.aurapix.core.ui.components.AuraBottomBar
-import com.ferbotz.aurapix.core.ui.components.AuraSearchField
 import com.ferbotz.aurapix.core.ui.components.AuraTab
 import com.ferbotz.aurapix.core.ui.components.AuraTopBar
 import com.ferbotz.aurapix.core.ui.components.Avatar
-import com.ferbotz.aurapix.core.ui.components.CategoryChip
 import com.ferbotz.aurapix.core.ui.components.CreditsBadge
 import com.ferbotz.aurapix.core.ui.components.NetworkImage
 import com.ferbotz.aurapix.core.ui.components.SecondaryButton
@@ -46,7 +38,7 @@ import com.ferbotz.aurapix.core.ui.theme.AuraPixTheme
 import com.ferbotz.aurapix.core.ui.theme.AuraShapes
 import com.ferbotz.aurapix.core.ui.theme.AuraTheme
 
-/** Past creations: search, filter chips and a 2-column gallery. */
+/** Past creations: a 2-column gallery. */
 @Composable
 fun HistoryScreen(
     modifier: Modifier = Modifier,
@@ -57,10 +49,6 @@ fun HistoryScreen(
     selectedTab: AuraTab = AuraTab.MyCreations,
     onSelectTab: (AuraTab) -> Unit = {},
 ) {
-    var query by remember { mutableStateOf("") }
-    var filter by remember { mutableIntStateOf(0) }
-    val filters = listOf("All Creations", "Portraits", "Landscapes", "Abstract")
-
     Scaffold(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.background,
@@ -78,14 +66,6 @@ fun HistoryScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            item { AuraSearchField(query, { query = it }, placeholder = "Search your creations") }
-            item {
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(filters.size) { index ->
-                        CategoryChip(filters[index], selected = filter == index, onClick = { filter = index })
-                    }
-                }
-            }
             items(items.chunked(2)) { row ->
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     row.forEach { historyItem ->

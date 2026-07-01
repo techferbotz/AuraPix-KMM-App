@@ -21,6 +21,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.ferbotz.aurapix.core.auth.rememberGoogleAuthProvider
 import com.ferbotz.aurapix.core.di.DataModule
 import com.ferbotz.aurapix.core.ui.components.AuraBottomBar
 import com.ferbotz.aurapix.core.ui.components.AuraTab
@@ -42,6 +43,8 @@ import com.ferbotz.aurapix.template.ui.TemplateDetailScreen
 import com.ferbotz.aurapix.creation.ui.UploadPhotosScreen
 import com.ferbotz.aurapix.creation.ui.HistoryViewModel
 import com.ferbotz.aurapix.feed.ui.HomeFeedViewModel
+import com.ferbotz.aurapix.profile.ui.LoginUiState
+import com.ferbotz.aurapix.profile.ui.LoginViewModel
 import com.ferbotz.aurapix.profile.ui.ProfileViewModel
 import com.ferbotz.aurapix.template.ui.TemplateDetailViewModel
 import com.ferbotz.aurapix.core.ui.base.UiState
@@ -193,7 +196,6 @@ private fun HomeContainer(navController: NavHostController, auth: AuthState) {
                 feedState = feedState,
                 selectedTab = tab,
                 onSelectTab = { tab = it },
-                onCreate = { navController.navigate(UploadRoute) },
                 onTemplateClick = { navController.navigate(TemplateDetailRoute(it.id, it.name)) },
                 onRetry = { vm.refresh() },
             )
@@ -216,12 +218,10 @@ private fun HomeContainer(navController: NavHostController, auth: AuthState) {
         AuraTab.Profile -> if (auth.isLoggedIn) {
             val vm = remember { ProfileViewModel(DataModule.profileRepository, DataModule.authRepository) }
             DisposableEffect(Unit) { onDispose { vm.onCleared() } }
-            val profileState by vm.profileState.collectAsState()
-            val profile = (profileState as? UiState.Success)?.data
+            val state by vm.state.collectAsState()
 
             ProfileScreen(
-                name = profile?.displayName ?: "...",
-                credits = profile?.credits?.totalCredits ?: DataModule.preferences.cachedCredits,
+                state = state,
                 selectedTab = tab,
                 onSelectTab = { tab = it },
                 onUpgrade = { navController.navigate(PremiumPlansRoute) },
@@ -229,22 +229,32 @@ private fun HomeContainer(navController: NavHostController, auth: AuthState) {
                 onOpenSettings = { navController.navigate(SettingsRoute) },
                 onHelp = { navController.navigate(HelpRoute) },
                 onPrivacyPolicy = { navController.navigate(WebViewRoute(PRIVACY_URL, "Privacy Policy")) },
+                onRetry = { vm.refresh() },
                 onLogout = {
                     vm.logout()
                     auth.logout()
                 },
             )
         } else {
+            val loginVm = remember { LoginViewModel(DataModule.authRepository) }
+            DisposableEffect(Unit) { onDispose { loginVm.onCleared() } }
+            val loginState by loginVm.state.collectAsState()
+            val googleAuth = rememberGoogleAuthProvider()
+
+            LaunchedEffect(loginState) {
+                if (loginState is LoginUiState.Success) auth.onLoginSuccess()
+            }
+
             Scaffold(
                 bottomBar = { AuraBottomBar(selected = tab, onSelect = { tab = it }) },
                 containerColor = MaterialTheme.colorScheme.background,
             ) { innerPadding ->
                 LoginScreen(
                     modifier = Modifier.fillMaxSize().padding(innerPadding),
-                    // Google sign-in: the platform layer acquires the idToken and calls
-                    // AuthRepository.loginWithGoogle before this success callback fires.
-                    onGoogleSignIn = { auth.onLoginSuccess() },
-                    onContinueAsGuest = { auth.onLoginSuccess() },
+                    loading = loginState is LoginUiState.Loading,
+                    errorMessage = (loginState as? LoginUiState.Error)?.message,
+                    // Runs the platform Google flow → ID token → POST /auth/google → JWT stored.
+                    onGoogleSignIn = { loginVm.signIn { googleAuth.signIn() } },
                 )
             }
         }

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Bolt
@@ -88,7 +89,7 @@ fun AuraIconButton(
 /**
  * Standardized top app bar: a fixed 64dp row with an always-centered [title], an optional
  * leading slot (back arrow / avatar) and optional trailing [actions] (credits / icons).
- * Replaces the inconsistent per-screen headers in the mockups.
+ * Consumes the status-bar inset itself (the app is edge-to-edge), mirroring M3 TopAppBar.
  */
 @Composable
 fun AuraTopBar(
@@ -100,6 +101,7 @@ fun AuraTopBar(
     Box(
         modifier = modifier
             .fillMaxWidth()
+            .statusBarsPadding()
             .height(64.dp)
             .padding(horizontal = 8.dp),
         contentAlignment = Alignment.Center,
@@ -124,7 +126,7 @@ fun AuraTopBar(
 }
 
 /** The three canonical destinations. (Mockups also showed mismatched Search/Create tabs;
- *  those are dropped here — "create" lives in the home FAB.) */
+ *  those are dropped here.) */
 enum class AuraTab(val label: String, val icon: ImageVector) {
     Feed("Feed", Icons.Rounded.GridView),
     MyCreations("My Creations", Icons.Rounded.PhotoLibrary),

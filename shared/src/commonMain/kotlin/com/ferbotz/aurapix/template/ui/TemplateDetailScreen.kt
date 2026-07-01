@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.foundation.layout.size
@@ -61,7 +62,7 @@ fun TemplateDetailScreen(
         containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
             if (state is UiState.Success) {
-                Column(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background).padding(16.dp)) {
+                Column(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background).navigationBarsPadding().padding(16.dp)) {
                     val enabled = state.data.slots.isNotEmpty()
                     PrimaryButton(
                         text = if (enabled) "Generate (${state.data.slots.size} photo${if (state.data.slots.size == 1) "" else "s"})" else "Generate",

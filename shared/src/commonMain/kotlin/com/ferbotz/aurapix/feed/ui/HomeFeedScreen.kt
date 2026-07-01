@@ -14,11 +14,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.AddPhotoAlternate
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -52,7 +48,6 @@ fun HomeFeedScreen(
     modifier: Modifier = Modifier,
     credits: Int = 0,
     feedState: UiState<List<FeedSection>> = UiState.Success(sampleSections),
-    onCreate: () -> Unit = {},
     onTemplateClick: (TemplateItem) -> Unit = {},
     onCategoryClick: (CategoryItem) -> Unit = {},
     onRetry: () -> Unit = {},
@@ -70,15 +65,6 @@ fun HomeFeedScreen(
             )
         },
         bottomBar = { AuraBottomBar(selected = selectedTab, onSelect = onSelectTab) },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = onCreate,
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-            ) {
-                Icon(Icons.Rounded.AddPhotoAlternate, contentDescription = "Create")
-            }
-        },
     ) { innerPadding ->
         Box(Modifier.fillMaxSize().padding(innerPadding)) {
             when (feedState) {
