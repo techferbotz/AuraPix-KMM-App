@@ -1,6 +1,8 @@
 package com.ferbotz.aurapix.template.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,10 +18,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.AddAPhoto
 import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -27,14 +32,25 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
+import com.ferbotz.aurapix.core.media.rememberImagePicker
+import com.ferbotz.aurapix.core.ui.base.UiState
+import com.ferbotz.aurapix.core.ui.base.userMessage
 import com.ferbotz.aurapix.core.ui.components.AuraIconButton
 import com.ferbotz.aurapix.core.ui.components.CategoryChip
 import com.ferbotz.aurapix.core.ui.components.GlassCard
@@ -44,29 +60,43 @@ import com.ferbotz.aurapix.core.ui.components.StatusBadge
 import com.ferbotz.aurapix.core.ui.theme.AuraPixTheme
 import com.ferbotz.aurapix.core.ui.theme.AuraShapes
 import com.ferbotz.aurapix.core.ui.theme.AuraTheme
-import com.ferbotz.aurapix.core.ui.base.UiState
-import com.ferbotz.aurapix.core.ui.base.userMessage
 
-/** Template detail: hero, categories, description, example previews, required photos and a Generate CTA. */
+/** Template detail: hero, categories, description, in-place photo upload and an Examples strip. */
 @Composable
 fun TemplateDetailScreen(
     modifier: Modifier = Modifier,
     state: UiState<TemplateDetailUi> = UiState.Success(sampleDetail),
     onBack: () -> Unit = {},
     onShare: () -> Unit = {},
-    onGenerate: () -> Unit = {},
+    onGenerate: (List<ByteArray>) -> Unit = {},
     onRetry: () -> Unit = {},
 ) {
+    val slotCount = (state as? UiState.Success)?.data?.slots?.size ?: 0
+
+    // One picked-image slot per template imageSlot; re-initialised when the template changes.
+    val images = remember { mutableStateListOf<ByteArray?>() }
+    LaunchedEffect(slotCount) {
+        images.clear()
+        repeat(slotCount) { images.add(null) }
+    }
+    var pendingIndex by remember { mutableStateOf(-1) }
+    val picker = rememberImagePicker { bytes ->
+        if (pendingIndex in images.indices) images[pendingIndex] = bytes
+    }
+
     Scaffold(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
             if (state is UiState.Success) {
+                val filled = images.count { it != null }
+                val ready = slotCount > 0 && filled == slotCount
+                val remaining = slotCount - filled
                 Column(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background).navigationBarsPadding().padding(16.dp)) {
-                    val enabled = state.data.slots.isNotEmpty()
                     PrimaryButton(
-                        text = if (enabled) "Generate (${state.data.slots.size} photo${if (state.data.slots.size == 1) "" else "s"})" else "Generate",
-                        onClick = onGenerate,
+                        text = if (ready) "Generate" else "Add $remaining more photo${if (remaining == 1) "" else "s"}",
+                        onClick = { onGenerate(images.filterNotNull()) },
+                        enabled = ready,
                         modifier = Modifier.fillMaxWidth(),
                         leadingIcon = Icons.Rounded.AutoAwesome,
                     )
@@ -97,9 +127,12 @@ fun TemplateDetailScreen(
 
             is UiState.Success -> DetailContent(
                 detail = state.data,
+                images = images,
                 bottomInset = innerPadding.calculateBottomPadding(),
                 onBack = onBack,
                 onShare = onShare,
+                onPickSlot = { index -> pendingIndex = index; picker.pick() },
+                onClearSlot = { index -> if (index in images.indices) images[index] = null },
             )
         }
     }
@@ -108,9 +141,12 @@ fun TemplateDetailScreen(
 @Composable
 private fun DetailContent(
     detail: TemplateDetailUi,
+    images: List<ByteArray?>,
     bottomInset: androidx.compose.ui.unit.Dp,
     onBack: () -> Unit,
     onShare: () -> Unit,
+    onPickSlot: (Int) -> Unit,
+    onClearSlot: (Int) -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -160,6 +196,29 @@ private fun DetailContent(
                 )
             }
 
+            // Upload — input images come BEFORE the examples strip.
+            if (detail.slots.isNotEmpty()) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        "Your photos (${detail.slots.size})",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    GlassCard(Modifier.fillMaxWidth()) {
+                        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                            detail.slots.forEachIndexed { index, slot ->
+                                UploadSlot(
+                                    slot = slot,
+                                    image = images.getOrNull(index),
+                                    onPick = { onPickSlot(index) },
+                                    onClear = { onClearSlot(index) },
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
             if (detail.previewImageUrls.isNotEmpty()) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Examples", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
@@ -174,40 +233,56 @@ private fun DetailContent(
                     }
                 }
             }
-
-            if (detail.slots.isNotEmpty()) {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        "What you'll need (${detail.slots.size})",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                    GlassCard(Modifier.fillMaxWidth()) {
-                        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                            detail.slots.forEach { slot -> SlotRow(slot) }
-                        }
-                    }
-                }
-            }
         }
     }
 }
 
+/** A single required photo: tap the tile to pick/replace, or clear a chosen one. */
 @Composable
-private fun SlotRow(slot: TemplateSlotUi) {
+private fun UploadSlot(
+    slot: TemplateSlotUi,
+    image: ByteArray?,
+    onPick: () -> Unit,
+    onClear: () -> Unit,
+) {
     Row(
         Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        NetworkImage(
-            slot.exampleImageUrl,
-            slot.title,
-            Modifier.size(48.dp).clip(AuraShapes.small),
-        )
+        Box(
+            Modifier.size(56.dp).clip(AuraShapes.small).clickable(onClick = onPick),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (image != null) {
+                AsyncImage(
+                    model = image,
+                    contentDescription = slot.title,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            } else {
+                Box(
+                    Modifier.fillMaxSize()
+                        .background(MaterialTheme.colorScheme.surfaceContainer)
+                        .border(1.5.dp, MaterialTheme.colorScheme.primaryContainer, AuraShapes.small),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(Icons.Rounded.AddAPhoto, "Add photo", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
+                }
+            }
+        }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(slot.title, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface)
             Text(slot.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        if (image != null) {
+            Box(
+                Modifier.size(32.dp).clip(CircleShape).clickable(onClick = onClear),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(Icons.Rounded.Close, "Remove", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
+            }
         }
     }
 }

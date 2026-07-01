@@ -40,7 +40,8 @@ import com.ferbotz.aurapix.creation.ui.ResultScreen
 import com.ferbotz.aurapix.profile.ui.SettingsScreen
 import com.ferbotz.aurapix.billing.ui.SubscriptionSuccessScreen
 import com.ferbotz.aurapix.template.ui.TemplateDetailScreen
-import com.ferbotz.aurapix.creation.ui.UploadPhotosScreen
+import com.ferbotz.aurapix.creation.ui.CreationDetailViewModel
+import com.ferbotz.aurapix.creation.ui.GenerationViewModel
 import com.ferbotz.aurapix.creation.ui.HistoryViewModel
 import com.ferbotz.aurapix.feed.ui.HomeFeedViewModel
 import com.ferbotz.aurapix.profile.ui.LoginUiState
@@ -49,7 +50,6 @@ import com.ferbotz.aurapix.profile.ui.ProfileViewModel
 import com.ferbotz.aurapix.template.ui.TemplateDetailViewModel
 import com.ferbotz.aurapix.core.ui.base.UiState
 import kotlinx.coroutines.delay
-import kotlin.random.Random
 
 private const val PRIVACY_URL = "https://policies.google.com/privacy"
 private const val TERMS_URL = "https://policies.google.com/terms"
@@ -60,6 +60,10 @@ fun AuraNavHost(
     navController: NavHostController = rememberNavController(),
     auth: AuthState = remember { AuthState(DataModule.authRepository) },
 ) {
+    // Shared across TemplateDetail → Processing → Result/Failed so the generation survives navigation.
+    val generationVm = remember { GenerationViewModel(DataModule.creationsRepository) }
+    DisposableEffect(Unit) { onDispose { generationVm.onCleared() } }
+
     NavHost(navController = navController, startDestination = SplashRoute) {
         composable<SplashRoute> {
             SplashScreen()
@@ -80,41 +84,54 @@ fun AuraNavHost(
             TemplateDetailScreen(
                 state = state,
                 onBack = { navController.popBackStack() },
-                onGenerate = { navController.navigate(UploadRoute) },
+                onGenerate = { images ->
+                    generationVm.generate(route.templateId, images)
+                    navController.navigate(ProcessingRoute)
+                },
                 onRetry = { vm.retry() },
             )
         }
 
-        composable<UploadRoute> {
-            UploadPhotosScreen(
-                onBack = { navController.popBackStack() },
-                onTrain = { navController.navigate(ProcessingRoute) },
-            )
-        }
-
         composable<ProcessingRoute> {
-            // Stub progress until the image-picker + GenerationViewModel wiring lands.
+            val genState by generationVm.state.collectAsState()
             var progress by remember { mutableFloatStateOf(0f) }
-            val willSucceed = remember { Random.nextFloat() < 0.85f }
+            // Indeterminate-style: ease toward 90% while the server generates + we long-poll.
             LaunchedEffect(Unit) {
-                animate(0f, 1f, animationSpec = tween(durationMillis = 2600)) { value, _ -> progress = value }
-                navController.navigate(if (willSucceed) ResultRoute("") else GenerationFailedRoute) {
-                    popUpTo(HomeRoute) { inclusive = false }
+                animate(0f, 0.9f, animationSpec = tween(durationMillis = 12_000)) { value, _ -> progress = value }
+            }
+            LaunchedEffect(genState) {
+                when (val s = genState) {
+                    is UiState.Success ->
+                        if (s.data.status == "COMPLETED") {
+                            navController.navigate(ResultRoute(s.data.id)) { popUpTo(HomeRoute) { inclusive = false } }
+                        } else {
+                            navController.navigate(GenerationFailedRoute) { popUpTo(HomeRoute) { inclusive = false } }
+                        }
+                    is UiState.Error ->
+                        navController.navigate(GenerationFailedRoute) { popUpTo(HomeRoute) { inclusive = false } }
+                    else -> {}
                 }
             }
             ProcessingScreen(progress = progress)
         }
 
-        composable<ResultRoute> {
+        composable<ResultRoute> { entry ->
+            val route = entry.toRoute<ResultRoute>()
+            val vm = remember { CreationDetailViewModel(DataModule.creationsRepository) }
+            DisposableEffect(Unit) { onDispose { vm.onCleared() } }
+            LaunchedEffect(route.creationId) { vm.load(route.creationId) }
+            val state by vm.state.collectAsState()
             ResultScreen(
+                imageUrl = (state as? UiState.Success)?.data?.generatedImageUrl,
                 onBack = { navController.popBackStack(HomeRoute, inclusive = false) },
-                onRetry = { navController.navigate(ProcessingRoute) },
+                onRetry = { navController.popBackStack(HomeRoute, inclusive = false) },
             )
         }
 
         composable<GenerationFailedRoute> {
             GenerationFailedScreen(
                 onRetry = {
+                    generationVm.retry()
                     navController.navigate(ProcessingRoute) { popUpTo(GenerationFailedRoute) { inclusive = true } }
                 },
                 onGoHome = { navController.popBackStack(HomeRoute, inclusive = false) },

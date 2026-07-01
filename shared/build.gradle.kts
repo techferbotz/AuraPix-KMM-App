@@ -47,6 +47,8 @@ kotlin {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.ktor.client.okhttp)
             implementation(libs.androidx.startup.runtime)
+            // Photo picker (rememberLauncherForActivityResult + PickVisualMedia)
+            implementation(libs.androidx.activity.compose)
             // Google Sign-In via Credential Manager + Google Identity
             implementation(libs.androidx.credentials)
             implementation(libs.androidx.credentials.playServicesAuth)

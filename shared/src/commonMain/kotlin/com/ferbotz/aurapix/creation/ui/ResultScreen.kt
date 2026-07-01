@@ -36,6 +36,7 @@ import com.ferbotz.aurapix.core.ui.theme.AuraTheme
 @Composable
 fun ResultScreen(
     modifier: Modifier = Modifier,
+    imageUrl: String? = null,
     onBack: () -> Unit = {},
     onShare: () -> Unit = {},
     onRetry: () -> Unit = {},
@@ -45,7 +46,7 @@ fun ResultScreen(
         modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
     ) {
         NetworkImage(
-            null,
+            imageUrl,
             "Result",
             Modifier
                 .align(Alignment.Center)

@@ -72,6 +72,15 @@ class CreationsRepository(
         }
     }.flowOn(Dispatchers.Default)
 
+    /** One-shot creation detail (no long-poll) — used by the result/detail screen. */
+    fun getCreation(creationId: String): Flow<DataState<CreationDetailDto>> = flow {
+        emit(DataState.Loading)
+        remote.getCreation(creationId, wait = false).fold(
+            onSuccess = { emit(DataState.Success(it)) },
+            onFailure = { emit(DataState.Error(it.asApiError())) },
+        )
+    }.flowOn(Dispatchers.Default)
+
     suspend fun deleteCreation(id: String) = dao.deleteById(id)
 }
 

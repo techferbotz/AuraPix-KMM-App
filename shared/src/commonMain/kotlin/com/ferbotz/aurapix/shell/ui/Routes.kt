@@ -12,9 +12,6 @@ object HomeRoute
 data class TemplateDetailRoute(val templateId: String, val title: String)
 
 @Serializable
-object UploadRoute
-
-@Serializable
 object ProcessingRoute
 
 @Serializable
