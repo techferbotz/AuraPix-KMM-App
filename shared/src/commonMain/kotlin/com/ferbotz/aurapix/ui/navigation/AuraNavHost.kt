@@ -74,11 +74,12 @@ fun AuraNavHost(
             val vm = remember { TemplateDetailViewModel(DataModule.templatesRepository) }
             DisposableEffect(Unit) { onDispose { vm.onCleared() } }
             LaunchedEffect(route.templateId) { vm.load(route.templateId) }
-            // templateState is collected for detail/imageSlots once the upload feature lands.
+            val state by vm.templateState.collectAsState()
             TemplateDetailScreen(
-                title = route.title,
+                state = state,
                 onBack = { navController.popBackStack() },
                 onGenerate = { navController.navigate(UploadRoute) },
+                onRetry = { vm.retry() },
             )
         }
 

@@ -1,5 +1,6 @@
 package com.ferbotz.aurapix.data.remote
 
+import co.touchlab.kermit.Logger as KermitLogger
 import com.ferbotz.aurapix.data.prefs.AppPreferences
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
@@ -8,6 +9,7 @@ import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.plugins.plugin
 import io.ktor.http.HttpHeaders
@@ -23,6 +25,9 @@ val auraJson: Json = Json {
     encodeDefaults = true
 }
 
+/** Kermit logger for all networking. Logs to Logcat (Android) and the device console (iOS). */
+val httpLogger: KermitLogger = KermitLogger.withTag("AuraPix-HTTP")
+
 fun createHttpClient(
     engine: HttpClientEngine = defaultHttpEngine(),
     preferences: AppPreferences,
@@ -30,7 +35,16 @@ fun createHttpClient(
     val client = HttpClient(engine) {
         // Do NOT set expectSuccess=true — we must read the body on 4xx/5xx to parse errorCode.
         install(ContentNegotiation) { json(auraJson) }
-        install(Logging) { level = LogLevel.INFO }
+        install(Logging) {
+            // Pipe Ktor's request/response logging through Kermit.
+            logger = object : Logger {
+                override fun log(message: String) {
+                    httpLogger.d { message }
+                }
+            }
+            // ALL → request line, all headers (incl. Authorization), and request/response bodies.
+            level = LogLevel.ALL
+        }
         install(HttpTimeout) {
             requestTimeoutMillis = 30_000
             connectTimeoutMillis = 15_000
@@ -40,8 +54,12 @@ fun createHttpClient(
     }
     // Ktor 3: intercept is called on the plugin instance after client creation.
     client.plugin(HttpSend).intercept { request ->
-        preferences.authToken?.let { token ->
+        val token = preferences.authToken
+        if (token != null) {
             request.headers.append(HttpHeaders.Authorization, "Bearer $token")
+            httpLogger.d { "→ ${request.method.value} ${request.url.buildString()} | Authorization: Bearer $token" }
+        } else {
+            httpLogger.d { "→ ${request.method.value} ${request.url.buildString()} | (no auth token — guest)" }
         }
         execute(request)
     }

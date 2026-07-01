@@ -11,7 +11,6 @@ import com.ferbotz.aurapix.data.remote.dto.PagedResponse
 import com.ferbotz.aurapix.data.remote.dto.ProfileDto
 import com.ferbotz.aurapix.data.remote.dto.PurchaseDto
 import com.ferbotz.aurapix.data.remote.dto.SubscriptionDetailDto
-import com.ferbotz.aurapix.data.remote.dto.TemplateDetailDto
 import com.ferbotz.aurapix.data.remote.dto.TemplateSummaryDto
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -58,10 +57,7 @@ class AuraApi(private val client: HttpClient) {
     suspend fun getCategoryTemplates(categoryId: String, page: Int = 1, limit: Int = 20): Result<PagedResponse<TemplateSummaryDto>> =
         safeApiCall { client.get("categories/$categoryId/templates") { parameter("page", page); parameter("limit", limit) } }
 
-    // ── Templates ─────────────────────────────────────────────────────────────
-
-    suspend fun getTemplate(templateId: String): Result<TemplateDetailDto> =
-        safeApiCall { client.get("templates/$templateId") }
+    // ── Templates: see TemplateRemoteDataSource ─────────────────────────────────
 
     // ── Generate ──────────────────────────────────────────────────────────────
 
