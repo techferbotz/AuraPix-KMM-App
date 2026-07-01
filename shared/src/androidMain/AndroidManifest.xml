@@ -10,7 +10,7 @@
             android:exported="false"
             tools:node="merge">
             <meta-data
-                android:name="com.ferbotz.aurapix.data.local.AuraStartupInitializer"
+                android:name="com.ferbotz.aurapix.core.data.local.AuraStartupInitializer"
                 android:value="androidx.startup" />
         </provider>
     </application>

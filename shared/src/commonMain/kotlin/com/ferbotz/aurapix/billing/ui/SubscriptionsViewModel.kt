@@ -1,0 +1,41 @@
+package com.ferbotz.aurapix.billing.ui
+
+import com.ferbotz.aurapix.core.ui.base.AuraViewModel
+import com.ferbotz.aurapix.core.ui.base.UiState
+import com.ferbotz.aurapix.core.ui.base.toUiState
+
+import com.ferbotz.aurapix.core.data.remote.dto.PagedResponse
+import com.ferbotz.aurapix.billing.data.dto.PurchaseDto
+import com.ferbotz.aurapix.billing.data.dto.SubscriptionDetailDto
+import com.ferbotz.aurapix.billing.data.SubscriptionsRepository
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class SubscriptionsViewModel(
+    subscriptionsRepository: SubscriptionsRepository,
+) : AuraViewModel() {
+
+    private val refreshTrigger = MutableStateFlow(0)
+
+    val subscriptionState: StateFlow<UiState<SubscriptionDetailDto>> =
+        refreshTrigger
+            .flatMapLatest { subscriptionsRepository.getSubscription() }
+            .map { it.toUiState() }
+            .stateIn(scope, SharingStarted.WhileSubscribed(5_000), UiState.Loading)
+
+    val purchasesState: StateFlow<UiState<PagedResponse<PurchaseDto>>> =
+        refreshTrigger
+            .flatMapLatest { subscriptionsRepository.getPurchases() }
+            .map { it.toUiState() }
+            .stateIn(scope, SharingStarted.WhileSubscribed(5_000), UiState.Loading)
+
+    fun refresh() {
+        refreshTrigger.value += 1
+    }
+}

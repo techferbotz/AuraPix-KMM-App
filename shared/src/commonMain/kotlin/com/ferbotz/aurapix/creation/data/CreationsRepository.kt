@@ -1,0 +1,98 @@
+package com.ferbotz.aurapix.creation.data
+
+import com.ferbotz.aurapix.core.data.DataState
+import com.ferbotz.aurapix.core.data.remote.asApiError
+import com.ferbotz.aurapix.creation.data.dto.CreationDetailDto
+import com.ferbotz.aurapix.creation.data.dto.CreationDto
+import com.ferbotz.aurapix.creation.data.local.CreationDao
+import com.ferbotz.aurapix.creation.data.local.CreationEntity
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.launch
+
+/**
+ * Offline-first creations + the generate/poll flow.
+ *
+ * [observeCreations] is the source of truth: it mirrors the Room cache (so the screen updates
+ * live as rows change) and kicks off a network refresh, surfacing an error only when there is
+ * nothing cached to show.
+ */
+class CreationsRepository(
+    private val remote: CreationRemoteDataSource,
+    private val dao: CreationDao,
+) {
+    fun observeCreations(): Flow<DataState<List<CreationEntity>>> = channelFlow {
+        send(DataState.Loading)
+        // Mirror the local cache — keeps emitting as the DB changes (refresh, poll updates).
+        launch {
+            dao.observeAll().collect { send(DataState.Success(it)) }
+        }
+        // Refresh from network; only surface the error if we have no cache to fall back on.
+        remote.getCreations().fold(
+            onSuccess = { paged ->
+                dao.clear()
+                dao.upsertAll(paged.items.map { it.toEntity() })
+            },
+            onFailure = { if (dao.count() == 0) send(DataState.Error(it.asApiError())) },
+        )
+    }.flowOn(Dispatchers.Default)
+
+    /**
+     * Starts a generation, then long-polls the creation until it is COMPLETED/FAILED,
+     * upserting each snapshot into the cache. Emits the terminal creation as Success.
+     */
+    fun generateAndPoll(templateId: String, images: List<ByteArray>): Flow<DataState<CreationDetailDto>> = flow {
+        emit(DataState.Loading)
+        val start = remote.generate(templateId, images).fold(
+            onSuccess = { it },
+            onFailure = { emit(DataState.Error(it.asApiError())); null },
+        ) ?: return@flow
+
+        while (true) {
+            val keepPolling = remote.getCreation(start.creationId, wait = true).fold(
+                onSuccess = { detail ->
+                    dao.upsertAll(listOf(detail.toEntity()))
+                    when (detail.status) {
+                        "COMPLETED", "FAILED" -> {
+                            emit(DataState.Success(detail))
+                            false
+                        }
+                        else -> true // still PROCESSING — long-poll returned early, keep going
+                    }
+                },
+                onFailure = {
+                    emit(DataState.Error(it.asApiError()))
+                    false
+                },
+            )
+            if (!keepPolling) return@flow
+        }
+    }.flowOn(Dispatchers.Default)
+
+    suspend fun deleteCreation(id: String) = dao.deleteById(id)
+}
+
+private fun CreationDto.toEntity() = CreationEntity(
+    id = id,
+    status = status,
+    generatedImageUrl = generatedImageUrl,
+    templateTitleSnapshot = templateTitleSnapshot,
+    templateThumbnailSnapshot = templateThumbnailSnapshot,
+    createdAt = createdAt,
+    templateId = "",
+    failureReason = null,
+)
+
+private fun CreationDetailDto.toEntity() = CreationEntity(
+    id = id,
+    status = status,
+    generatedImageUrl = generatedImageUrl,
+    templateTitleSnapshot = templateTitleSnapshot,
+    templateThumbnailSnapshot = templateThumbnailSnapshot,
+    createdAt = createdAt,
+    templateId = templateId,
+    failureReason = failureReason,
+)
