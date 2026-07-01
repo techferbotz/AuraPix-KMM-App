@@ -4,10 +4,9 @@ import androidx.compose.runtime.Composable
 
 /**
  * The Google OAuth **Web** client id (serverClientId) the backend verifies ID tokens against.
- * TODO: replace with the real "…apps.googleusercontent.com" from Google Cloud (OAuth Web client).
  * On-device sign-in also requires an Android OAuth client (package + SHA-1) in the same project.
  */
-const val GOOGLE_WEB_CLIENT_ID: String = "TODO_REPLACE.apps.googleusercontent.com"
+const val GOOGLE_WEB_CLIENT_ID: String = "190079027234-69qrmre1sljvtpujvh3oume6fkvtqu8g.apps.googleusercontent.com"
 
 /** Platform Google sign-in. Launches the native flow and returns the Google **ID token**. */
 interface GoogleAuthProvider {
