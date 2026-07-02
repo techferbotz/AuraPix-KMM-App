@@ -4,6 +4,8 @@ import com.ferbotz.aurapix.billing.data.SubscriptionRemoteDataSource
 import com.ferbotz.aurapix.billing.data.SubscriptionsRepository
 import com.ferbotz.aurapix.category.data.CategoriesRepository
 import com.ferbotz.aurapix.category.data.CategoryRemoteDataSource
+import com.ferbotz.aurapix.core.config.DefaultRemoteConfig
+import com.ferbotz.aurapix.core.config.RemoteConfig
 import com.ferbotz.aurapix.core.data.local.AppDatabase
 import com.ferbotz.aurapix.core.data.local.buildDatabase
 import com.ferbotz.aurapix.core.data.local.databaseBuilder
@@ -32,6 +34,7 @@ object DataModule {
     // ── Core infrastructure ─────────────────────────────────────────────────
     // Preferences must be first — the HTTP client reads the auth token from it.
     val preferences: AppPreferences by lazy { AppPreferences(Settings()) }
+    val remoteConfig: RemoteConfig by lazy { DefaultRemoteConfig() }
     val httpClient: HttpClient by lazy { createHttpClient(preferences = preferences) }
     val database: AppDatabase by lazy { buildDatabase(databaseBuilder()) }
 
@@ -50,7 +53,7 @@ object DataModule {
     val templatesRepository by lazy { TemplatesRepository(templateRemoteDataSource) }
     val categoriesRepository by lazy { CategoriesRepository(categoryRemoteDataSource) }
     val creationsRepository by lazy { CreationsRepository(creationRemoteDataSource, database.creationDao()) }
-    val authRepository by lazy { AuthRepository(authRemoteDataSource, preferences) }
+    val authRepository by lazy { AuthRepository(authRemoteDataSource, profileRemoteDataSource, preferences) }
     val profileRepository by lazy { ProfileRepository(profileRemoteDataSource, preferences) }
     val subscriptionsRepository by lazy { SubscriptionsRepository(subscriptionRemoteDataSource) }
 }

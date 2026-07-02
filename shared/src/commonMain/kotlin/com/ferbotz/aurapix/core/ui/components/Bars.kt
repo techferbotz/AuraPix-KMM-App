@@ -14,7 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Bolt
+import androidx.compose.material.icons.rounded.Diamond
 import androidx.compose.material.icons.rounded.GridView
 import androidx.compose.material.icons.rounded.PhotoLibrary
 import androidx.compose.material.icons.rounded.Person
@@ -49,7 +49,7 @@ fun CreditsBadge(
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Icon(
-            Icons.Rounded.Bolt,
+            Icons.Rounded.Diamond,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(16.dp),

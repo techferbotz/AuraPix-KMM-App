@@ -27,10 +27,12 @@ import com.ferbotz.aurapix.core.ui.components.AuraBottomBar
 import com.ferbotz.aurapix.core.ui.components.AuraTab
 import com.ferbotz.aurapix.core.ui.components.WebViewScreen
 import com.ferbotz.aurapix.billing.ui.CreditsSuccessScreen
+import com.ferbotz.aurapix.billing.ui.PaywallBottomSheet
 import com.ferbotz.aurapix.creation.ui.GenerationFailedScreen
 import com.ferbotz.aurapix.profile.ui.HelpFaqScreen
 import com.ferbotz.aurapix.creation.ui.HistoryScreen
 import com.ferbotz.aurapix.feed.ui.HomeFeedScreen
+import com.ferbotz.aurapix.profile.ui.LoginBottomSheet
 import com.ferbotz.aurapix.profile.ui.LoginScreen
 import com.ferbotz.aurapix.billing.ui.PremiumPlansScreen
 import com.ferbotz.aurapix.creation.ui.ProcessingScreen
@@ -81,15 +83,57 @@ fun AuraNavHost(
             DisposableEffect(Unit) { onDispose { vm.onCleared() } }
             LaunchedEffect(route.templateId) { vm.load(route.templateId) }
             val state by vm.templateState.collectAsState()
+
+            val prefs = DataModule.preferences
+            val monetization = remember { DataModule.remoteConfig.monetization }
+            val cost = monetization.generationCostGems
+
+            // Generate gate: signed in → enough gems → generate; else show the login / paywall sheet.
+            var loginImages by remember { mutableStateOf<List<ByteArray>?>(null) }
+            var paywallImages by remember { mutableStateOf<List<ByteArray>?>(null) }
+
+            val startGeneration: (List<ByteArray>) -> Unit = { images ->
+                generationVm.generate(route.templateId, images)
+                navController.navigate(ProcessingRoute)
+            }
+
             TemplateDetailScreen(
                 state = state,
+                generationCost = cost,
                 onBack = { navController.popBackStack() },
                 onGenerate = { images ->
-                    generationVm.generate(route.templateId, images)
-                    navController.navigate(ProcessingRoute)
+                    when {
+                        !auth.isLoggedIn -> loginImages = images
+                        prefs.cachedCredits < cost -> paywallImages = images
+                        else -> startGeneration(images)
+                    }
                 },
                 onRetry = { vm.retry() },
             )
+
+            loginImages?.let { images ->
+                LoginBottomSheet(
+                    onDismiss = { loginImages = null },
+                    onLoggedIn = {
+                        loginImages = null
+                        auth.onLoginSuccess()
+                        // Login hydrated credits — re-check before generating.
+                        if (prefs.cachedCredits < cost) paywallImages = images else startGeneration(images)
+                    },
+                )
+            }
+
+            paywallImages?.let { _ ->
+                PaywallBottomSheet(
+                    isPremium = prefs.subscriptionStatus == "ACTIVE",
+                    config = monetization,
+                    onDismiss = { paywallImages = null },
+                    onSelectOffer = {
+                        // TODO: drive the RevenueCat purchase; on success re-check credits + resume generation.
+                        paywallImages = null
+                    },
+                )
+            }
         }
 
         composable<ProcessingRoute> {

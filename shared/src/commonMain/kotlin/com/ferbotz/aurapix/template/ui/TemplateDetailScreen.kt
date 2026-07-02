@@ -66,6 +66,7 @@ import com.ferbotz.aurapix.core.ui.theme.AuraTheme
 fun TemplateDetailScreen(
     modifier: Modifier = Modifier,
     state: UiState<TemplateDetailUi> = UiState.Success(sampleDetail),
+    generationCost: Int = 10,
     onBack: () -> Unit = {},
     onShare: () -> Unit = {},
     onGenerate: (List<ByteArray>) -> Unit = {},
@@ -94,7 +95,7 @@ fun TemplateDetailScreen(
                 val remaining = slotCount - filled
                 Column(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background).navigationBarsPadding().padding(16.dp)) {
                     PrimaryButton(
-                        text = if (ready) "Generate" else "Add $remaining more photo${if (remaining == 1) "" else "s"}",
+                        text = if (ready) "Generate · $generationCost gems" else "Add $remaining more photo${if (remaining == 1) "" else "s"}",
                         onClick = { onGenerate(images.filterNotNull()) },
                         enabled = ready,
                         modifier = Modifier.fillMaxWidth(),
