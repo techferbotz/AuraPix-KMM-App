@@ -14,6 +14,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
@@ -52,6 +53,7 @@ import com.ferbotz.aurapix.profile.ui.ProfileViewModel
 import com.ferbotz.aurapix.template.ui.TemplateDetailViewModel
 import com.ferbotz.aurapix.core.ui.base.UiState
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 private const val PRIVACY_URL = "https://policies.google.com/privacy"
 private const val TERMS_URL = "https://policies.google.com/terms"
@@ -60,7 +62,7 @@ private const val SUPPORT_URL = "https://support.google.com"
 @Composable
 fun AuraNavHost(
     navController: NavHostController = rememberNavController(),
-    auth: AuthState = remember { AuthState(DataModule.authRepository) },
+    auth: AuthState = remember { AuthState(DataModule.userManager) },
 ) {
     // Shared across TemplateDetail → Processing → Result/Failed so the generation survives navigation.
     val generationVm = remember { GenerationViewModel(DataModule.creationsRepository) }
@@ -84,9 +86,10 @@ fun AuraNavHost(
             LaunchedEffect(route.templateId) { vm.load(route.templateId) }
             val state by vm.templateState.collectAsState()
 
-            val prefs = DataModule.preferences
+            val userManager = DataModule.userManager
             val monetization = remember { DataModule.remoteConfig.monetization }
             val cost = monetization.generationCostGems
+            val purchaseScope = rememberCoroutineScope()
 
             // Generate gate: signed in → enough gems → generate; else show the login / paywall sheet.
             var loginImages by remember { mutableStateOf<List<ByteArray>?>(null) }
@@ -104,7 +107,7 @@ fun AuraNavHost(
                 onGenerate = { images ->
                     when {
                         !auth.isLoggedIn -> loginImages = images
-                        prefs.cachedCredits < cost -> paywallImages = images
+                        userManager.current.credits < cost -> paywallImages = images
                         else -> startGeneration(images)
                     }
                 },
@@ -117,20 +120,28 @@ fun AuraNavHost(
                     onLoggedIn = {
                         loginImages = null
                         auth.onLoginSuccess()
+                        userManager.current.id?.let { DataModule.paymentManager.identify(it) }
                         // Login hydrated credits — re-check before generating.
-                        if (prefs.cachedCredits < cost) paywallImages = images else startGeneration(images)
+                        if (userManager.current.credits < cost) paywallImages = images else startGeneration(images)
                     },
                 )
             }
 
-            paywallImages?.let { _ ->
+            paywallImages?.let { images ->
                 PaywallBottomSheet(
-                    isPremium = prefs.subscriptionStatus == "ACTIVE",
+                    isPremium = userManager.current.isPremium,
                     config = monetization,
                     onDismiss = { paywallImages = null },
-                    onSelectOffer = {
-                        // TODO: drive the RevenueCat purchase; on success re-check credits + resume generation.
-                        paywallImages = null
+                    onSelectOffer = { offer ->
+                        purchaseScope.launch {
+                            DataModule.paymentManager.purchase(offer.productId).onSuccess {
+                                // Store transaction done → RC webhook credits the backend; re-read /profile.
+                                userManager.refresh()
+                                paywallImages = null
+                                if (userManager.current.credits >= cost) startGeneration(images)
+                            }
+                            // On failure/cancel we leave the sheet open so the user can retry.
+                        }
                     },
                 )
             }
@@ -189,6 +200,7 @@ fun AuraNavHost(
                 onTerms = { navController.navigate(WebViewRoute(TERMS_URL, "Terms of Service")) },
                 onLogout = {
                     auth.logout()
+                    DataModule.paymentManager.onLoggedOut()
                     navController.popBackStack(HomeRoute, inclusive = false)
                 },
             )
@@ -246,7 +258,7 @@ private fun HomeContainer(navController: NavHostController, auth: AuthState) {
     when (tab) {
         AuraTab.Feed -> {
             val vm = remember {
-                HomeFeedViewModel(DataModule.feedRepository, DataModule.profileRepository)
+                HomeFeedViewModel(DataModule.feedRepository, DataModule.userManager.state)
             }
             DisposableEffect(Unit) { onDispose { vm.onCleared() } }
             val feedState by vm.feedState.collectAsState()
@@ -277,7 +289,7 @@ private fun HomeContainer(navController: NavHostController, auth: AuthState) {
         }
 
         AuraTab.Profile -> if (auth.isLoggedIn) {
-            val vm = remember { ProfileViewModel(DataModule.profileRepository, DataModule.authRepository) }
+            val vm = remember { ProfileViewModel(DataModule.userManager) }
             DisposableEffect(Unit) { onDispose { vm.onCleared() } }
             val state by vm.state.collectAsState()
 
@@ -294,16 +306,20 @@ private fun HomeContainer(navController: NavHostController, auth: AuthState) {
                 onLogout = {
                     vm.logout()
                     auth.logout()
+                    DataModule.paymentManager.onLoggedOut()
                 },
             )
         } else {
-            val loginVm = remember { LoginViewModel(DataModule.authRepository) }
+            val loginVm = remember { LoginViewModel(DataModule.authRepository, DataModule.userManager) }
             DisposableEffect(Unit) { onDispose { loginVm.onCleared() } }
             val loginState by loginVm.state.collectAsState()
             val googleAuth = rememberGoogleAuthProvider()
 
             LaunchedEffect(loginState) {
-                if (loginState is LoginUiState.Success) auth.onLoginSuccess()
+                if (loginState is LoginUiState.Success) {
+                    auth.onLoginSuccess()
+                    DataModule.userManager.current.id?.let { DataModule.paymentManager.identify(it) }
+                }
             }
 
             Scaffold(

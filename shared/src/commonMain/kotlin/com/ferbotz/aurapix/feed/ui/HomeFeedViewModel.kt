@@ -1,14 +1,12 @@
 package com.ferbotz.aurapix.feed.ui
 
+import com.ferbotz.aurapix.core.session.UserState
 import com.ferbotz.aurapix.core.ui.base.AuraViewModel
 import com.ferbotz.aurapix.core.ui.base.UiState
 import com.ferbotz.aurapix.core.ui.base.toUiState
-
-import com.ferbotz.aurapix.core.data.DataState
+import com.ferbotz.aurapix.feed.data.FeedRepository
 import com.ferbotz.aurapix.feed.data.model.FeedTray
 import com.ferbotz.aurapix.feed.data.model.TrayType
-import com.ferbotz.aurapix.feed.data.FeedRepository
-import com.ferbotz.aurapix.profile.data.ProfileRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -20,7 +18,7 @@ import kotlinx.coroutines.flow.stateIn
 @OptIn(ExperimentalCoroutinesApi::class)
 class HomeFeedViewModel(
     feedRepository: FeedRepository,
-    private val profileRepository: ProfileRepository,
+    userState: StateFlow<UserState>,
 ) : AuraViewModel() {
 
     private val refreshTrigger = MutableStateFlow(0)
@@ -32,12 +30,11 @@ class HomeFeedViewModel(
             .map { state -> state.toUiState { trays -> trays.mapNotNull { it.toSectionOrNull() } } }
             .stateIn(scope, SharingStarted.WhileSubscribed(5_000), UiState.Loading)
 
-    /** Credits badge in the top bar. Falls back to the cached value when offline / not signed in. */
+    /** Gem badge in the top bar — reflects the shared session (UserManager). */
     val credits: StateFlow<Int> =
-        refreshTrigger
-            .flatMapLatest { profileRepository.getCredits() }
-            .map { state -> (state as? DataState.Success)?.data?.totalCredits ?: profileRepository.cachedCredits }
-            .stateIn(scope, SharingStarted.WhileSubscribed(5_000), profileRepository.cachedCredits)
+        userState
+            .map { it.credits }
+            .stateIn(scope, SharingStarted.WhileSubscribed(5_000), userState.value.credits)
 
     fun refresh() {
         refreshTrigger.value += 1

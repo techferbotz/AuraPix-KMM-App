@@ -4,11 +4,11 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.ferbotz.aurapix.profile.data.AuthRepository
+import com.ferbotz.aurapix.profile.data.UserManager
 
 @Stable
-class AuthState(private val authRepository: AuthRepository) {
-    var isLoggedIn by mutableStateOf(authRepository.isLoggedIn)
+class AuthState(private val userManager: UserManager) {
+    var isLoggedIn by mutableStateOf(userManager.current.isLoggedIn)
         private set
 
     fun onLoginSuccess() {
@@ -16,7 +16,7 @@ class AuthState(private val authRepository: AuthRepository) {
     }
 
     fun logout() {
-        authRepository.logout()
+        userManager.logout()
         isLoggedIn = false
     }
 }

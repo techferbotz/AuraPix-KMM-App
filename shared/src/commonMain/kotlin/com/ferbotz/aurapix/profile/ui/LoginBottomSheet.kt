@@ -40,7 +40,7 @@ fun LoginBottomSheet(
     onLoggedIn: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val vm = remember { LoginViewModel(DataModule.authRepository) }
+    val vm = remember { LoginViewModel(DataModule.authRepository, DataModule.userManager) }
     DisposableEffect(Unit) { onDispose { vm.onCleared() } }
     val loginState by vm.state.collectAsState()
     val googleAuth = rememberGoogleAuthProvider()

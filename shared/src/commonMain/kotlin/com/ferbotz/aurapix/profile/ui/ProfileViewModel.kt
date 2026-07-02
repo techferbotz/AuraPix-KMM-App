@@ -1,49 +1,44 @@
 package com.ferbotz.aurapix.profile.ui
 
+import com.ferbotz.aurapix.core.session.UserState
 import com.ferbotz.aurapix.core.ui.base.AuraViewModel
 import com.ferbotz.aurapix.core.ui.base.UiState
-import com.ferbotz.aurapix.core.ui.base.toUiState
-import com.ferbotz.aurapix.profile.data.AuthRepository
-import com.ferbotz.aurapix.profile.data.ProfileRepository
-import com.ferbotz.aurapix.profile.data.dto.ProfileDto
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.MutableStateFlow
+import com.ferbotz.aurapix.profile.data.UserManager
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class ProfileViewModel(
-    profileRepository: ProfileRepository,
-    private val authRepository: AuthRepository,
+    private val userManager: UserManager,
 ) : AuraViewModel() {
 
-    private val refreshTrigger = MutableStateFlow(0)
-
+    /** Mirrors the shared session; always renders cached data and refreshes in the background. */
     val state: StateFlow<UiState<ProfileUi>> =
-        refreshTrigger
-            .flatMapLatest { profileRepository.getProfile() }
-            .map { it.toUiState { dto -> dto.toUi() } }
+        userManager.state
+            .map<UserState, UiState<ProfileUi>> { UiState.Success(it.toProfileUi()) }
             .stateIn(scope, SharingStarted.WhileSubscribed(5_000), UiState.Loading)
 
+    init {
+        userManager.refreshAsync()
+    }
+
     fun refresh() {
-        refreshTrigger.value += 1
+        userManager.refreshAsync()
     }
 
     fun logout() {
-        authRepository.logout()
+        userManager.logout()
     }
 }
 
-private fun ProfileDto.toUi(): ProfileUi = ProfileUi(
-    name = displayName,
-    email = email,
-    avatarUrl = profileImageUrl,
-    totalCredits = credits.totalCredits,
-    isPremium = subscription.status == "ACTIVE",
-    subscriptionLabel = when (subscription.status) {
+private fun UserState.toProfileUi() = ProfileUi(
+    name = name ?: "",
+    email = email ?: "",
+    avatarUrl = avatarUrl,
+    totalCredits = credits,
+    isPremium = isPremium,
+    subscriptionLabel = when (subscriptionStatus) {
         "ACTIVE" -> "Premium"
         "EXPIRED" -> "Expired"
         "CANCELLED" -> "Cancelled"

@@ -1,5 +1,6 @@
 package com.ferbotz.aurapix.core.di
 
+import com.ferbotz.aurapix.billing.data.PaymentManager
 import com.ferbotz.aurapix.billing.data.SubscriptionRemoteDataSource
 import com.ferbotz.aurapix.billing.data.SubscriptionsRepository
 import com.ferbotz.aurapix.category.data.CategoriesRepository
@@ -20,6 +21,7 @@ import com.ferbotz.aurapix.profile.data.AuthRemoteDataSource
 import com.ferbotz.aurapix.profile.data.AuthRepository
 import com.ferbotz.aurapix.profile.data.ProfileRemoteDataSource
 import com.ferbotz.aurapix.profile.data.ProfileRepository
+import com.ferbotz.aurapix.profile.data.UserManager
 import com.ferbotz.aurapix.template.data.TemplateRemoteDataSource
 import com.ferbotz.aurapix.template.data.TemplatesRepository
 import com.russhwolf.settings.Settings
@@ -53,7 +55,9 @@ object DataModule {
     val templatesRepository by lazy { TemplatesRepository(templateRemoteDataSource) }
     val categoriesRepository by lazy { CategoriesRepository(categoryRemoteDataSource) }
     val creationsRepository by lazy { CreationsRepository(creationRemoteDataSource, database.creationDao()) }
-    val authRepository by lazy { AuthRepository(authRemoteDataSource, profileRemoteDataSource, preferences) }
+    val authRepository by lazy { AuthRepository(authRemoteDataSource, preferences) }
     val profileRepository by lazy { ProfileRepository(profileRemoteDataSource, preferences) }
+    val userManager by lazy { UserManager(profileRemoteDataSource, preferences) }
+    val paymentManager by lazy { PaymentManager() }
     val subscriptionsRepository by lazy { SubscriptionsRepository(subscriptionRemoteDataSource) }
 }

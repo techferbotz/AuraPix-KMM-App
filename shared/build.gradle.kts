@@ -79,6 +79,8 @@ kotlin {
             implementation(libs.ktor.client.logging)
             // Logging (Kermit)
             implementation(libs.kermit)
+            // In-app purchases / subscriptions (RevenueCat KMP)
+            implementation(libs.revenuecat.purchases)
             // Local storage (Room) + preferences (multiplatform-settings)
             implementation(libs.androidx.room.runtime)
             implementation(libs.androidx.sqlite.bundled)
