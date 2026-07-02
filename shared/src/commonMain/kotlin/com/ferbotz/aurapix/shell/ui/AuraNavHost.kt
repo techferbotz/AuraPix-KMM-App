@@ -14,7 +14,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
@@ -28,7 +27,7 @@ import com.ferbotz.aurapix.core.ui.components.AuraBottomBar
 import com.ferbotz.aurapix.core.ui.components.AuraTab
 import com.ferbotz.aurapix.core.ui.components.WebViewScreen
 import com.ferbotz.aurapix.billing.ui.CreditsSuccessScreen
-import com.ferbotz.aurapix.billing.ui.PaywallBottomSheet
+import com.ferbotz.aurapix.billing.ui.PaywallHost
 import com.ferbotz.aurapix.creation.ui.GenerationFailedScreen
 import com.ferbotz.aurapix.profile.ui.HelpFaqScreen
 import com.ferbotz.aurapix.creation.ui.HistoryScreen
@@ -53,7 +52,6 @@ import com.ferbotz.aurapix.profile.ui.ProfileViewModel
 import com.ferbotz.aurapix.template.ui.TemplateDetailViewModel
 import com.ferbotz.aurapix.core.ui.base.UiState
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 private const val PRIVACY_URL = "https://policies.google.com/privacy"
 private const val TERMS_URL = "https://policies.google.com/terms"
@@ -89,7 +87,6 @@ fun AuraNavHost(
             val userManager = DataModule.userManager
             val monetization = remember { DataModule.remoteConfig.monetization }
             val cost = monetization.generationCostGems
-            val purchaseScope = rememberCoroutineScope()
 
             // Generate gate: signed in → enough gems → generate; else show the login / paywall sheet.
             var loginImages by remember { mutableStateOf<List<ByteArray>?>(null) }
@@ -128,20 +125,14 @@ fun AuraNavHost(
             }
 
             paywallImages?.let { images ->
-                PaywallBottomSheet(
-                    isPremium = userManager.current.isPremium,
+                PaywallHost(
                     config = monetization,
                     onDismiss = { paywallImages = null },
-                    onSelectOffer = { offer ->
-                        purchaseScope.launch {
-                            DataModule.paymentManager.purchase(offer.productId).onSuccess {
-                                // Store transaction done → RC webhook credits the backend; re-read /profile.
-                                userManager.refresh()
-                                paywallImages = null
-                                if (userManager.current.credits >= cost) startGeneration(images)
-                            }
-                            // On failure/cancel we leave the sheet open so the user can retry.
-                        }
+                    onPurchased = { totalCredits, subscriptionStatus ->
+                        // Verify already updated the backend → apply the fresh balances + resume.
+                        userManager.applyBilling(totalCredits, subscriptionStatus)
+                        paywallImages = null
+                        if (userManager.current.credits >= cost) startGeneration(images)
                     },
                 )
             }

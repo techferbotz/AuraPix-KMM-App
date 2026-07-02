@@ -64,6 +64,13 @@ class UserManager(
         _state.value = UserState()
     }
 
+    /** Apply fresh balances from a billing verify response (avoids an extra /profile round-trip). */
+    fun applyBilling(totalCredits: Int, subscriptionStatus: String) {
+        prefs.cachedCredits = totalCredits
+        prefs.subscriptionStatus = subscriptionStatus
+        _state.value = prefs.toUserState()
+    }
+
     private fun AppPreferences.toUserState() = UserState(
         isLoggedIn = isLoggedIn,
         id = userId,

@@ -1,5 +1,6 @@
 package com.ferbotz.aurapix.core.di
 
+import com.ferbotz.aurapix.billing.data.BillingRemoteDataSource
 import com.ferbotz.aurapix.billing.data.PaymentManager
 import com.ferbotz.aurapix.billing.data.SubscriptionRemoteDataSource
 import com.ferbotz.aurapix.billing.data.SubscriptionsRepository
@@ -58,6 +59,7 @@ object DataModule {
     val authRepository by lazy { AuthRepository(authRemoteDataSource, preferences) }
     val profileRepository by lazy { ProfileRepository(profileRemoteDataSource, preferences) }
     val userManager by lazy { UserManager(profileRemoteDataSource, preferences) }
-    val paymentManager by lazy { PaymentManager() }
+    val billingRemoteDataSource by lazy { BillingRemoteDataSource(httpClient) }
+    val paymentManager by lazy { PaymentManager(billingRemoteDataSource) }
     val subscriptionsRepository by lazy { SubscriptionsRepository(subscriptionRemoteDataSource) }
 }
