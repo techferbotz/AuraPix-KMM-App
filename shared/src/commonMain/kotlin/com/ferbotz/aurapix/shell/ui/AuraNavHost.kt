@@ -31,7 +31,10 @@ import com.ferbotz.aurapix.billing.ui.PaywallHost
 import com.ferbotz.aurapix.creation.ui.GenerationFailedScreen
 import com.ferbotz.aurapix.profile.ui.HelpFaqScreen
 import com.ferbotz.aurapix.creation.ui.HistoryScreen
+import com.ferbotz.aurapix.feed.ui.FeedSectionKind
 import com.ferbotz.aurapix.feed.ui.HomeFeedScreen
+import com.ferbotz.aurapix.feed.ui.TrayListingScreen
+import com.ferbotz.aurapix.feed.ui.TrayListingViewModel
 import com.ferbotz.aurapix.profile.ui.LoginBottomSheet
 import com.ferbotz.aurapix.profile.ui.LoginScreen
 import com.ferbotz.aurapix.billing.ui.PremiumPlansScreen
@@ -76,6 +79,21 @@ fun AuraNavHost(
         }
 
         composable<HomeRoute> { HomeContainer(navController, auth) }
+
+        composable<TrayListingRoute> { entry ->
+            val route = entry.toRoute<TrayListingRoute>()
+            val vm = remember { TrayListingViewModel(DataModule.feedRepository, route.trayId, FeedSectionKind.valueOf(route.kind)) }
+            DisposableEffect(Unit) { onDispose { vm.onCleared() } }
+            val state by vm.state.collectAsState()
+
+            TrayListingScreen(
+                title = route.title,
+                state = state,
+                onBack = { navController.popBackStack() },
+                onTemplateClick = { navController.navigate(TemplateDetailRoute(it.id, it.name)) },
+                onRetry = { vm.retry() },
+            )
+        }
 
         composable<TemplateDetailRoute> { entry ->
             val route = entry.toRoute<TemplateDetailRoute>()
@@ -261,6 +279,7 @@ private fun HomeContainer(navController: NavHostController, auth: AuthState) {
                 selectedTab = tab,
                 onSelectTab = { tab = it },
                 onTemplateClick = { navController.navigate(TemplateDetailRoute(it.id, it.name)) },
+                onSeeAll = { navController.navigate(TrayListingRoute(it.id, it.title, it.kind.name)) },
                 onRetry = { vm.refresh() },
             )
         }

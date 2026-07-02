@@ -11,6 +11,8 @@ data class CategoryItem(
     val id: String,
     val name: String,
     val iconUrl: String? = null,
+    /** Wide banner art used by the larger feed category cards; falls back to [iconUrl]. */
+    val bannerUrl: String? = null,
 )
 
 /** One horizontal carousel on the feed: either templates or categories, in display order. */

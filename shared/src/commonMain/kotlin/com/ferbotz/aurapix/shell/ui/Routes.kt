@@ -11,6 +11,10 @@ object HomeRoute
 @Serializable
 data class TemplateDetailRoute(val templateId: String, val title: String)
 
+/** A feed tray's "See all" listing. [kind] is a [com.ferbotz.aurapix.feed.ui.FeedSectionKind] name. */
+@Serializable
+data class TrayListingRoute(val trayId: String, val title: String, val kind: String)
+
 @Serializable
 object ProcessingRoute
 

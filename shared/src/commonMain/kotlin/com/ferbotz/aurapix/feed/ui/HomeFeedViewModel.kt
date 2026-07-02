@@ -50,9 +50,7 @@ private fun FeedTray.toSectionOrNull(): FeedSection? = when (type) {
                 id = id,
                 title = title,
                 kind = FeedSectionKind.TEMPLATES,
-                templates = list.map {
-                    TemplateItem(name = it.title, id = it.id, thumbnailUrl = it.thumbnailImageUrl, trending = it.isTrending)
-                },
+                templates = list.map { it.toTemplateItem() },
             )
         }
 
@@ -63,7 +61,7 @@ private fun FeedTray.toSectionOrNull(): FeedSection? = when (type) {
                 id = id,
                 title = title,
                 kind = FeedSectionKind.CATEGORIES,
-                categories = list.map { CategoryItem(id = it.id, name = it.name, iconUrl = it.iconUrl) },
+                categories = list.map { it.toCategoryItem() },
             )
         }
 

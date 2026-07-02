@@ -7,4 +7,6 @@ data class TemplateItem(
     val id: String = "",
     val thumbnailUrl: String? = null,
     val trending: Boolean = false,
+    /** One-line tagline shown on the hero carousel card. */
+    val description: String? = null,
 )
