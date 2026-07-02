@@ -15,6 +15,10 @@ data class TemplateDetailRoute(val templateId: String, val title: String)
 @Serializable
 data class TrayListingRoute(val trayId: String, val title: String, val kind: String)
 
+/** A category's detail page: the category name in the top bar and its templates in a grid. */
+@Serializable
+data class CategoryDetailRoute(val categoryId: String, val categoryName: String)
+
 @Serializable
 object ProcessingRoute
 
