@@ -21,7 +21,7 @@ import kotlin.coroutines.cancellation.CancellationException
  * Your RevenueCat **public** SDK key. TODO: replace with your real (test) key from the RC dashboard,
  * and make sure the RC products/offerings match the `productId`s in the monetization config JSON.
  */
-const val REVENUECAT_API_KEY: String = "TODO_REPLACE_revenuecat_public_sdk_key"
+const val REVENUECAT_API_KEY: String = "test_wEiiLnonsRdgqMAakqRizorUEGV"
 
 /** Raised when the user dismisses the native purchase sheet. */
 class PurchaseCancelledException : Exception("Purchase cancelled")

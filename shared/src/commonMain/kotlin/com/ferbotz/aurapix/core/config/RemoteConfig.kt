@@ -29,7 +29,7 @@ private const val DEFAULT_MONETIZATION_JSON = """
   "currencySymbol": "₹",
   "freeUserOffers": [
     {
-      "productId": "monthly_100_gems",
+      "productId": "monthly",
       "type": "SUBSCRIPTION",
       "title": "Monthly Pass",
       "subtitle": "100 gems every month",
@@ -38,7 +38,7 @@ private const val DEFAULT_MONETIZATION_JSON = """
       "highlighted": true
     },
     {
-      "productId": "gems_10",
+      "productId": "gem_one_time_purchase",
       "type": "ONE_TIME",
       "title": "1 Generation",
       "subtitle": "10 gems, one-time",
@@ -49,16 +49,16 @@ private const val DEFAULT_MONETIZATION_JSON = """
   ],
   "proUserOffers": [
     {
-      "productId": "credits_100",
+      "productId": "gem_value_pack",
       "type": "ONE_TIME",
-      "title": "100 Gems",
-      "subtitle": "One-time top-up",
+      "title": "Value Pack",
+      "subtitle": "100 gems, one-time",
       "priceLabel": "₹100",
       "gems": 100,
       "highlighted": true
     },
     {
-      "productId": "gems_10",
+      "productId": "gem_one_time_purchase",
       "type": "ONE_TIME",
       "title": "1 Generation",
       "subtitle": "10 gems, one-time",
