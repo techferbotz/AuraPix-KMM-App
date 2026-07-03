@@ -13,8 +13,12 @@ import kotlinx.coroutines.launch
 
 /**
  * Drives the generate → long-poll flow. Imperative (not the flatMapLatest/stateIn pattern) so
- * [retry] can re-run the last request and set Loading **synchronously**, avoiding a stale
- * terminal state being re-observed when the Processing screen re-enters composition.
+ * [retry] can re-run the request and set Loading **synchronously**, avoiding a stale terminal
+ * state being re-observed when the Processing screen re-enters composition.
+ *
+ * Once `/generate` has produced a creation id, [retry] re-polls that SAME creation (`wait=true`)
+ * rather than starting a new generation — a socket timeout or transient API failure must never
+ * burn credits on a second image.
  */
 class GenerationViewModel(
     private val creationsRepository: CreationsRepository,
@@ -25,28 +29,40 @@ class GenerationViewModel(
     val state: StateFlow<UiState<CreationDetailDto>> = _state.asStateFlow()
 
     private var lastRequest: Pair<String, List<ByteArray>>? = null
+    /** Set the instant `/generate` succeeds; retry re-polls this instead of regenerating. */
+    private val creationId = MutableStateFlow<String?>(null)
     private var job: Job? = null
 
     fun generate(templateId: String, images: List<ByteArray>) {
         lastRequest = templateId to images
-        run(templateId, images)
+        creationId.value = null
+        job?.cancel()
+        _state.value = UiState.Loading
+        job = scope.launch {
+            creationsRepository.generateAndPoll(templateId, images) { creationId.value = it }
+                .collect { _state.value = it.toUiState() }
+        }
     }
 
     fun retry() {
-        lastRequest?.let { (templateId, images) -> run(templateId, images) }
+        val id = creationId.value
+        if (id == null) {
+            // The POST /generate itself never succeeded — nothing to poll, so start over.
+            lastRequest?.let { (templateId, images) -> generate(templateId, images) }
+            return
+        }
+        // Generation already started; only the long-poll failed — re-poll the SAME creation.
+        job?.cancel()
+        _state.value = UiState.Loading
+        job = scope.launch {
+            creationsRepository.pollCreation(id).collect { _state.value = it.toUiState() }
+        }
     }
 
     fun reset() {
         job?.cancel()
         lastRequest = null
+        creationId.value = null
         _state.value = UiState.Idle
-    }
-
-    private fun run(templateId: String, images: List<ByteArray>) {
-        job?.cancel()
-        _state.value = UiState.Loading
-        job = scope.launch {
-            creationsRepository.generateAndPoll(templateId, images).collect { _state.value = it.toUiState() }
-        }
     }
 }

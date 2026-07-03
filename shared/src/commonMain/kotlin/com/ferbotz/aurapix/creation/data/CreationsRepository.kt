@@ -9,6 +9,7 @@ import com.ferbotz.aurapix.creation.data.local.CreationEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
@@ -41,18 +42,38 @@ class CreationsRepository(
     }.flowOn(Dispatchers.Default)
 
     /**
-     * Starts a generation, then long-polls the creation until it is COMPLETED/FAILED,
-     * upserting each snapshot into the cache. Emits the terminal creation as Success.
+     * Starts a generation, then long-polls the creation until COMPLETED/FAILED, caching each
+     * snapshot. [onStarted] fires with the new creation id the instant `/generate` succeeds — the
+     * ViewModel keeps it so a failed poll can be retried against the SAME creation (via
+     * [pollCreation]) instead of generating a second image. Emits the terminal creation as Success.
      */
-    fun generateAndPoll(templateId: String, images: List<ByteArray>): Flow<DataState<CreationDetailDto>> = flow {
+    fun generateAndPoll(
+        templateId: String,
+        images: List<ByteArray>,
+        onStarted: (creationId: String) -> Unit,
+    ): Flow<DataState<CreationDetailDto>> = flow {
         emit(DataState.Loading)
         val start = remote.generate(templateId, images).fold(
             onSuccess = { it },
             onFailure = { emit(DataState.Error(it.asApiError())); null },
         ) ?: return@flow
+        onStarted(start.creationId)
+        emitAll(pollLoop(start.creationId))
+    }.flowOn(Dispatchers.Default)
 
+    /**
+     * Long-polls an existing creation (`wait=true`) until COMPLETED/FAILED. Used by "retry": a
+     * network / socket-timeout failure re-polls the same creation and never starts a new generation.
+     */
+    fun pollCreation(creationId: String): Flow<DataState<CreationDetailDto>> = flow {
+        emit(DataState.Loading)
+        emitAll(pollLoop(creationId))
+    }.flowOn(Dispatchers.Default)
+
+    /** Shared long-poll loop: caches + emits each terminal snapshot as Success, or the failure as Error. */
+    private fun pollLoop(creationId: String): Flow<DataState<CreationDetailDto>> = flow {
         while (true) {
-            val keepPolling = remote.getCreation(start.creationId, wait = true).fold(
+            val keepPolling = remote.getCreation(creationId, wait = true).fold(
                 onSuccess = { detail ->
                     dao.upsertAll(listOf(detail.toEntity()))
                     when (detail.status) {
@@ -70,7 +91,7 @@ class CreationsRepository(
             )
             if (!keepPolling) return@flow
         }
-    }.flowOn(Dispatchers.Default)
+    }
 
     /** One-shot creation detail (no long-poll) — used by the result/detail screen. */
     fun getCreation(creationId: String): Flow<DataState<CreationDetailDto>> = flow {

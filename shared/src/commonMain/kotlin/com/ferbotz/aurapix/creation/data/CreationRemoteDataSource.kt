@@ -38,13 +38,20 @@ class CreationRemoteDataSource(private val client: HttpClient) {
     suspend fun getCreations(page: Int = 1, limit: Int = 20): Result<PagedResponse<CreationDto>> =
         safeApiCall { client.get("creations") { parameter("page", page); parameter("limit", limit) } }
 
-    /** §4.12 — creation detail; `wait=true` long-polls up to 30s (uses a 90s request timeout). */
+    /**
+     * §4.12 — creation detail. `wait=true` long-polls server-side, so this call gets a 2-minute
+     * socket + request timeout (overriding the client's 30s default) so a slow generation isn't
+     * cut off by socket inactivity. The non-wait call keeps the default timeouts.
+     */
     suspend fun getCreation(creationId: String, wait: Boolean = false): Result<CreationDetailDto> =
         safeApiCall {
             client.get("creations/$creationId") {
                 if (wait) {
                     parameter("wait", true)
-                    timeout { requestTimeoutMillis = 90_000 }
+                    timeout {
+                        requestTimeoutMillis = 120_000
+                        socketTimeoutMillis = 120_000
+                    }
                 }
             }
         }
