@@ -194,7 +194,7 @@ fun AuraNavHost(
                     else -> {}
                 }
             }
-            ProcessingScreen(progress = progress)
+            ProcessingScreen(progress = progress, credits = currentUserState().credits)
         }
 
         composable<ResultRoute> { entry ->
@@ -244,6 +244,7 @@ fun AuraNavHost(
 
         composable<PurchaseCreditsRoute> {
             PurchaseCreditsScreen(
+                credits = currentUserState().credits,
                 onBack = { navController.popBackStack() },
                 onSelectPack = {
                     navController.navigate(CreditsSuccessRoute) { popUpTo(PurchaseCreditsRoute) { inclusive = true } }
@@ -281,18 +282,18 @@ fun AuraNavHost(
 @Composable
 private fun HomeContainer(navController: NavHostController, auth: AuthState) {
     var tab by remember { mutableStateOf(AuraTab.Feed) }
+    // Single source of truth for user data (credits, avatar) — observed once, shown on every tab.
+    val user = currentUserState()
 
     when (tab) {
         AuraTab.Feed -> {
-            val vm = remember {
-                HomeFeedViewModel(DataModule.feedRepository, DataModule.userManager.state)
-            }
+            val vm = remember { HomeFeedViewModel(DataModule.feedRepository) }
             DisposableEffect(Unit) { onDispose { vm.onCleared() } }
             val feedState by vm.feedState.collectAsState()
-            val credits by vm.credits.collectAsState()
 
             HomeFeedScreen(
-                credits = credits,
+                credits = user.credits,
+                avatarUrl = user.avatarUrl,
                 feedState = feedState,
                 selectedTab = tab,
                 onSelectTab = { tab = it },
@@ -310,6 +311,8 @@ private fun HomeContainer(navController: NavHostController, auth: AuthState) {
 
             HistoryScreen(
                 items = (state as? UiState.Success)?.data ?: emptyList(),
+                credits = user.credits,
+                avatarUrl = user.avatarUrl,
                 selectedTab = tab,
                 onSelectTab = { tab = it },
                 onItemClick = { navController.navigate(ResultRoute(it.id)) },

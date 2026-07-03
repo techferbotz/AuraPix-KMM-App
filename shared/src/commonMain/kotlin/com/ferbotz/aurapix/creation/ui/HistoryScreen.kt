@@ -43,6 +43,7 @@ import com.ferbotz.aurapix.core.ui.theme.AuraTheme
 fun HistoryScreen(
     modifier: Modifier = Modifier,
     credits: Int = 50,
+    avatarUrl: String? = null,
     items: List<HistoryItem> = sampleHistory,
     onItemClick: (HistoryItem) -> Unit = {},
     onRefresh: () -> Unit = {},
@@ -55,7 +56,7 @@ fun HistoryScreen(
         topBar = {
             AuraTopBar(
                 title = "AuraPix",
-                navigationIcon = { Avatar(size = 36.dp, border = true) },
+                navigationIcon = { Avatar(imageUrl = avatarUrl, size = 36.dp, border = true) },
                 actions = { CreditsBadge(credits) },
             )
         },

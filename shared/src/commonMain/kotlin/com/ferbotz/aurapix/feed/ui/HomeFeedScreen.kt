@@ -35,6 +35,7 @@ import com.ferbotz.aurapix.core.ui.base.userMessage
 fun HomeFeedScreen(
     modifier: Modifier = Modifier,
     credits: Int = 0,
+    avatarUrl: String? = null,
     feedState: UiState<List<FeedSection>> = UiState.Success(sampleSections),
     onTemplateClick: (TemplateItem) -> Unit = {},
     onCategoryClick: (CategoryItem) -> Unit = {},
@@ -49,7 +50,7 @@ fun HomeFeedScreen(
         topBar = {
             AuraTopBar(
                 title = "AuraPix",
-                navigationIcon = { Avatar(size = 36.dp, border = true) },
+                navigationIcon = { Avatar(imageUrl = avatarUrl, size = 36.dp, border = true) },
                 actions = { CreditsBadge(credits) },
             )
         },

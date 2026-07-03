@@ -1,6 +1,5 @@
 package com.ferbotz.aurapix.feed.ui
 
-import com.ferbotz.aurapix.core.session.UserState
 import com.ferbotz.aurapix.core.ui.base.AuraViewModel
 import com.ferbotz.aurapix.core.ui.base.UiState
 import com.ferbotz.aurapix.core.ui.base.toUiState
@@ -18,7 +17,6 @@ import kotlinx.coroutines.flow.stateIn
 @OptIn(ExperimentalCoroutinesApi::class)
 class HomeFeedViewModel(
     feedRepository: FeedRepository,
-    userState: StateFlow<UserState>,
 ) : AuraViewModel() {
 
     private val refreshTrigger = MutableStateFlow(0)
@@ -29,12 +27,6 @@ class HomeFeedViewModel(
             .flatMapLatest { feedRepository.getFeed() }
             .map { state -> state.toUiState { trays -> trays.mapNotNull { it.toSectionOrNull() } } }
             .stateIn(scope, SharingStarted.WhileSubscribed(5_000), UiState.Loading)
-
-    /** Gem badge in the top bar — reflects the shared session (UserManager). */
-    val credits: StateFlow<Int> =
-        userState
-            .map { it.credits }
-            .stateIn(scope, SharingStarted.WhileSubscribed(5_000), userState.value.credits)
 
     fun refresh() {
         refreshTrigger.value += 1
