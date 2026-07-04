@@ -22,7 +22,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.ferbotz.aurapix.core.auth.rememberGoogleAuthProvider
+import com.ferbotz.aurapix.core.data.remote.ApiError
 import com.ferbotz.aurapix.core.di.DataModule
+import com.ferbotz.aurapix.core.media.rememberImageActions
 import com.ferbotz.aurapix.core.ui.components.AuraBottomBar
 import com.ferbotz.aurapix.core.ui.components.AuraTab
 import com.ferbotz.aurapix.core.ui.components.WebViewScreen
@@ -177,9 +179,15 @@ fun AuraNavHost(
 
         composable<ProcessingRoute> {
             val genState by generationVm.state.collectAsState()
+            val monetization = remember { DataModule.remoteConfig.monetization }
             var progress by remember { mutableFloatStateOf(0f) }
+            var attempt by remember { mutableStateOf(0) }
+            var showCreditsPaywall by remember { mutableStateOf(false) }
+
             // Indeterminate-style: ease toward 90% while the server generates + we long-poll.
-            LaunchedEffect(Unit) {
+            // Keyed on [attempt] so a post-paywall retry restarts the ring from zero.
+            LaunchedEffect(attempt) {
+                progress = 0f
                 animate(0f, 0.9f, animationSpec = tween(durationMillis = 12_000)) { value, _ -> progress = value }
             }
             LaunchedEffect(genState) {
@@ -191,11 +199,33 @@ fun AuraNavHost(
                             navController.navigate(GenerationFailedRoute) { popUpTo(HomeRoute) { inclusive = false } }
                         }
                     is UiState.Error ->
-                        navController.navigate(GenerationFailedRoute) { popUpTo(HomeRoute) { inclusive = false } }
+                        // 402 INSUFFICIENT_CREDITS: server balance is short → offer to top up and resume,
+                        // rather than dropping to the generic failure screen.
+                        if (s.error is ApiError.InsufficientCredits) {
+                            showCreditsPaywall = true
+                        } else {
+                            navController.navigate(GenerationFailedRoute) { popUpTo(HomeRoute) { inclusive = false } }
+                        }
                     else -> {}
                 }
             }
             ProcessingScreen(progress = progress, credits = currentUserState().credits)
+
+            if (showCreditsPaywall) {
+                PaywallHost(
+                    config = monetization,
+                    onDismiss = {
+                        showCreditsPaywall = false
+                        navController.popBackStack()
+                    },
+                    onPurchased = { totalCredits, subscriptionStatus ->
+                        DataModule.userManager.applyBilling(totalCredits, subscriptionStatus)
+                        showCreditsPaywall = false
+                        attempt++             // restart the progress ring
+                        generationVm.retry()  // credits topped up → regenerate the same request
+                    },
+                )
+            }
         }
 
         composable<ResultRoute> { entry ->
@@ -205,10 +235,13 @@ fun AuraNavHost(
             LaunchedEffect(route.creationId) { vm.load(route.creationId) }
             val state by vm.state.collectAsState()
             val data = (state as? UiState.Success)?.data
+            val imageActions = rememberImageActions()
             ResultScreen(
                 title = data?.templateTitleSnapshot ?: "",
                 imageUrl = data?.generatedImageUrl,
                 onBack = { navController.popBackStack(HomeRoute, inclusive = false) },
+                onDownload = { data?.generatedImageUrl?.let { imageActions.download(it) } },
+                onShare = { data?.generatedImageUrl?.let { imageActions.share(it) } },
             )
         }
 
