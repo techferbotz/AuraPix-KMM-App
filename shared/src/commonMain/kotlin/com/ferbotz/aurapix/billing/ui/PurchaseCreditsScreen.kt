@@ -11,10 +11,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -24,20 +26,25 @@ import com.ferbotz.aurapix.core.ui.components.CreditsBadge
 import com.ferbotz.aurapix.core.ui.components.PricingCard
 import com.ferbotz.aurapix.core.ui.theme.AuraPixTheme
 
-/** Credit packs laid out in a 2-column grid. Reuses [PricingCard] for each pack. */
+/** Gem packs from the live RevenueCat offering, laid out in a 2-column grid. */
 @Composable
 fun PurchaseCreditsScreen(
     modifier: Modifier = Modifier,
-    credits: Int = 50,
+    credits: Int = 0,
+    packs: List<BillingPlan> = emptyList(),
+    loading: Boolean = false,
+    error: String? = null,
+    purchasingProductId: String? = null,
     onBack: () -> Unit = {},
-    onSelectPack: (CreditPack) -> Unit = {},
+    onSelectPack: (BillingPlan) -> Unit = {},
+    onRetry: () -> Unit = {},
 ) {
     Scaffold(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             AuraTopBar(
-                title = "Purchase Credits",
+                title = "Purchase Gems",
                 navigationIcon = { AuraIconButton(Icons.AutoMirrored.Rounded.ArrowBack, "Back", onBack) },
                 actions = { CreditsBadge(credits) },
             )
@@ -52,25 +59,36 @@ fun PurchaseCreditsScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Text(
-                "Credits never expire. Buy a pack and start creating.",
+                "Gems never expire. Buy a pack and start creating.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            sampleCreditPacks.chunked(2).forEach { row ->
-                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    row.forEach { pack ->
-                        PricingCard(
-                            title = "${pack.credits} Credits",
-                            price = pack.price,
-                            features = pack.perks,
-                            ctaText = "Select",
-                            onClick = { onSelectPack(pack) },
-                            modifier = Modifier.weight(1f),
-                            highlighted = pack.best,
-                            badgeText = if (pack.best) "Best Value" else null,
-                        )
+
+            when {
+                loading -> Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                }
+
+                packs.isEmpty() -> BillingMessage(error ?: "No gem packs available right now.", onRetry)
+
+                else -> packs.chunked(2).forEach { row ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        row.forEach { pack ->
+                            PricingCard(
+                                title = "${pack.gems} Gems",
+                                price = pack.priceLabel,
+                                features = listOf("Never expires"),
+                                ctaText = "Select",
+                                onClick = { onSelectPack(pack) },
+                                modifier = Modifier.weight(1f),
+                                highlighted = pack.highlighted,
+                                badgeText = if (pack.highlighted) "Best Value" else null,
+                                ctaEnabled = purchasingProductId == null,
+                                ctaLoading = purchasingProductId == pack.productId,
+                            )
+                        }
+                        if (row.size == 1) Box(Modifier.weight(1f))
                     }
-                    if (row.size == 1) Box(Modifier.weight(1f))
                 }
             }
         }
@@ -80,5 +98,13 @@ fun PurchaseCreditsScreen(
 @Preview
 @Composable
 private fun PurchaseCreditsScreenPreview() {
-    AuraPixTheme { PurchaseCreditsScreen() }
+    AuraPixTheme {
+        PurchaseCreditsScreen(
+            credits = 100,
+            packs = listOf(
+                BillingPlan("gem_value_pack", "gem_value_pack", "₹100", gems = 100, isSubscription = false, highlighted = true),
+                BillingPlan("gem_one_time_purchase", "gem_one_time_purchase", "₹15", gems = 10, isSubscription = false, highlighted = false),
+            ),
+        )
+    }
 }

@@ -27,6 +27,7 @@ import com.ferbotz.aurapix.core.ui.components.AuraBottomBar
 import com.ferbotz.aurapix.core.ui.components.AuraTab
 import com.ferbotz.aurapix.core.ui.components.WebViewScreen
 import com.ferbotz.aurapix.billing.ui.CreditsSuccessScreen
+import com.ferbotz.aurapix.billing.ui.BillingViewModel
 import com.ferbotz.aurapix.billing.ui.PaywallHost
 import com.ferbotz.aurapix.creation.ui.GenerationFailedScreen
 import com.ferbotz.aurapix.profile.ui.HelpFaqScreen
@@ -203,10 +204,11 @@ fun AuraNavHost(
             DisposableEffect(Unit) { onDispose { vm.onCleared() } }
             LaunchedEffect(route.creationId) { vm.load(route.creationId) }
             val state by vm.state.collectAsState()
+            val data = (state as? UiState.Success)?.data
             ResultScreen(
-                imageUrl = (state as? UiState.Success)?.data?.generatedImageUrl,
+                title = data?.templateTitleSnapshot ?: "",
+                imageUrl = data?.generatedImageUrl,
                 onBack = { navController.popBackStack(HomeRoute, inclusive = false) },
-                onRetry = { navController.popBackStack(HomeRoute, inclusive = false) },
             )
         }
 
@@ -221,7 +223,11 @@ fun AuraNavHost(
         }
 
         composable<SettingsRoute> {
+            val user = currentUserState()
             SettingsScreen(
+                name = user.name ?: "",
+                email = user.email ?: "",
+                avatarUrl = user.avatarUrl,
                 onBack = { navController.popBackStack() },
                 onPrivacyPolicy = { navController.navigate(WebViewRoute(PRIVACY_URL, "Privacy Policy")) },
                 onTerms = { navController.navigate(WebViewRoute(TERMS_URL, "Terms of Service")) },
@@ -234,21 +240,50 @@ fun AuraNavHost(
         }
 
         composable<PremiumPlansRoute> {
-            PremiumPlansScreen(
-                onBack = { navController.popBackStack() },
-                onChoosePlan = {
+            val vm = remember { BillingViewModel(DataModule.paymentManager, DataModule.userManager, DataModule.remoteConfig.monetization) }
+            DisposableEffect(Unit) { onDispose { vm.onCleared() } }
+            val billing by vm.state.collectAsState()
+
+            LaunchedEffect(billing.purchaseComplete) {
+                if (billing.purchaseComplete) {
+                    vm.consumePurchaseComplete()
                     navController.navigate(SubscriptionSuccessRoute) { popUpTo(PremiumPlansRoute) { inclusive = true } }
-                },
+                }
+            }
+
+            val plan = billing.plans.firstOrNull { it.isSubscription }
+            PremiumPlansScreen(
+                plan = plan,
+                loading = billing.loading,
+                error = billing.error,
+                purchasing = billing.purchasingProductId != null,
+                onBack = { navController.popBackStack() },
+                onSubscribe = { plan?.let { vm.purchase(it) } },
+                onRetry = { vm.load() },
             )
         }
 
         composable<PurchaseCreditsRoute> {
+            val vm = remember { BillingViewModel(DataModule.paymentManager, DataModule.userManager, DataModule.remoteConfig.monetization) }
+            DisposableEffect(Unit) { onDispose { vm.onCleared() } }
+            val billing by vm.state.collectAsState()
+
+            LaunchedEffect(billing.purchaseComplete) {
+                if (billing.purchaseComplete) {
+                    vm.consumePurchaseComplete()
+                    navController.navigate(CreditsSuccessRoute) { popUpTo(PurchaseCreditsRoute) { inclusive = true } }
+                }
+            }
+
             PurchaseCreditsScreen(
                 credits = currentUserState().credits,
+                packs = billing.plans.filter { !it.isSubscription },
+                loading = billing.loading,
+                error = billing.error,
+                purchasingProductId = billing.purchasingProductId,
                 onBack = { navController.popBackStack() },
-                onSelectPack = {
-                    navController.navigate(CreditsSuccessRoute) { popUpTo(PurchaseCreditsRoute) { inclusive = true } }
-                },
+                onSelectPack = { vm.purchase(it) },
+                onRetry = { vm.load() },
             )
         }
 
@@ -316,7 +351,6 @@ private fun HomeContainer(navController: NavHostController, auth: AuthState) {
                 selectedTab = tab,
                 onSelectTab = { tab = it },
                 onItemClick = { navController.navigate(ResultRoute(it.id)) },
-                onRefresh = { vm.refresh() },
             )
         }
 
@@ -332,7 +366,6 @@ private fun HomeContainer(navController: NavHostController, auth: AuthState) {
                 onUpgrade = { navController.navigate(PremiumPlansRoute) },
                 onPurchaseCredits = { navController.navigate(PurchaseCreditsRoute) },
                 onOpenSettings = { navController.navigate(SettingsRoute) },
-                onHelp = { navController.navigate(HelpRoute) },
                 onPrivacyPolicy = { navController.navigate(WebViewRoute(PRIVACY_URL, "Privacy Policy")) },
                 onRetry = { vm.refresh() },
                 onLogout = {

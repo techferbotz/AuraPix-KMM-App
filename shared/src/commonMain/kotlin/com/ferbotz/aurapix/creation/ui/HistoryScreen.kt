@@ -4,17 +4,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -32,7 +28,6 @@ import com.ferbotz.aurapix.core.ui.components.AuraTopBar
 import com.ferbotz.aurapix.core.ui.components.Avatar
 import com.ferbotz.aurapix.core.ui.components.CreditsBadge
 import com.ferbotz.aurapix.core.ui.components.NetworkImage
-import com.ferbotz.aurapix.core.ui.components.SecondaryButton
 import com.ferbotz.aurapix.core.ui.components.StatusBadge
 import com.ferbotz.aurapix.core.ui.theme.AuraPixTheme
 import com.ferbotz.aurapix.core.ui.theme.AuraShapes
@@ -46,7 +41,6 @@ fun HistoryScreen(
     avatarUrl: String? = null,
     items: List<HistoryItem> = sampleHistory,
     onItemClick: (HistoryItem) -> Unit = {},
-    onRefresh: () -> Unit = {},
     selectedTab: AuraTab = AuraTab.MyCreations,
     onSelectTab: (AuraTab) -> Unit = {},
 ) {
@@ -55,9 +49,13 @@ fun HistoryScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             AuraTopBar(
-                title = "AuraPix",
-                navigationIcon = { Avatar(imageUrl = avatarUrl, size = 36.dp, border = true) },
-                actions = { CreditsBadge(credits) },
+                navigationIcon = {
+                    Text("AuraPix", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurface)
+                },
+                actions = {
+                    CreditsBadge(credits)
+                    Avatar(imageUrl = avatarUrl, size = 36.dp, border = true)
+                },
             )
         },
         bottomBar = { AuraBottomBar(selected = selectedTab, onSelect = onSelectTab) },
@@ -74,9 +72,6 @@ fun HistoryScreen(
                     }
                     if (row.size == 1) Box(Modifier.weight(1f))
                 }
-            }
-            item {
-                SecondaryButton("Load more", onClick = onRefresh, modifier = Modifier.fillMaxWidth(), leadingIcon = Icons.Rounded.Refresh)
             }
         }
     }

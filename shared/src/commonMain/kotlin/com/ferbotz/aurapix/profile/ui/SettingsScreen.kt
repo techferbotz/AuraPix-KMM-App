@@ -3,7 +3,6 @@ package com.ferbotz.aurapix.profile.ui
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -14,7 +13,6 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.Logout
 import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.NotificationsActive
-import androidx.compose.material.icons.rounded.Style
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -32,23 +30,23 @@ import com.ferbotz.aurapix.core.ui.components.AuraListRow
 import com.ferbotz.aurapix.core.ui.components.AuraToggle
 import com.ferbotz.aurapix.core.ui.components.AuraTopBar
 import com.ferbotz.aurapix.core.ui.components.Avatar
-import com.ferbotz.aurapix.core.ui.components.CategoryChip
 import com.ferbotz.aurapix.core.ui.components.GlassCard
 import com.ferbotz.aurapix.core.ui.components.OverlineLabel
 import com.ferbotz.aurapix.core.ui.theme.AuraPixTheme
 
-/** App & account settings, grouped into glass sections with toggles. */
+/** App & account settings, grouped into glass sections. Account is driven by the real user. */
 @Composable
 fun SettingsScreen(
     modifier: Modifier = Modifier,
+    name: String = "",
+    email: String = "",
+    avatarUrl: String? = null,
     onBack: () -> Unit = {},
     onPrivacyPolicy: () -> Unit = {},
     onTerms: () -> Unit = {},
     onLogout: () -> Unit = {},
 ) {
     var pushNotifications by remember { mutableStateOf(true) }
-    var newTemplates by remember { mutableStateOf(false) }
-    var darkTheme by remember { mutableStateOf(true) }
 
     Scaffold(
         modifier = modifier,
@@ -70,9 +68,9 @@ fun SettingsScreen(
         ) {
             SettingsSection("Account") {
                 AuraListRow(
-                    title = "Julian Vane",
-                    subtitle = "julian.vane@gmail.com",
-                    leadingContent = { Avatar(size = 40.dp) },
+                    title = name.ifBlank { "Account" },
+                    subtitle = email.ifBlank { null },
+                    leadingContent = { Avatar(imageUrl = avatarUrl, size = 40.dp) },
                     trailing = {
                         Text("Connected", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                     },
@@ -91,24 +89,9 @@ fun SettingsScreen(
                     leadingIcon = Icons.Rounded.NotificationsActive,
                     trailing = { AuraToggle(pushNotifications, { pushNotifications = it }) },
                 )
-                AuraListRow(
-                    "New Templates",
-                    leadingIcon = Icons.Rounded.Style,
-                    trailing = { AuraToggle(newTemplates, { newTemplates = it }) },
-                )
             }
 
-            SettingsSection("Appearance") {
-                AuraListRow(
-                    "Theme",
-                    subtitle = "Choose your preferred look",
-                    trailing = {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            CategoryChip("Dark", selected = darkTheme, onClick = { darkTheme = true })
-                            CategoryChip("Light", selected = !darkTheme, onClick = { darkTheme = false })
-                        }
-                    },
-                )
+            SettingsSection("Preferences") {
                 AuraListRow(
                     "Language",
                     trailing = {
@@ -150,5 +133,5 @@ private fun SettingsSection(title: String, content: @Composable () -> Unit) {
 @Preview
 @Composable
 private fun SettingsScreenPreview() {
-    AuraPixTheme { SettingsScreen() }
+    AuraPixTheme { SettingsScreen(name = "Julian Vane", email = "julian.vane@gmail.com") }
 }

@@ -109,6 +109,8 @@ fun PricingCard(
     period: String? = null,
     highlighted: Boolean = false,
     badgeText: String? = null,
+    ctaEnabled: Boolean = true,
+    ctaLoading: Boolean = false,
 ) {
     val shape = AuraShapes.large
     val borderColor = if (highlighted) MaterialTheme.colorScheme.primaryContainer else AuraTheme.colors.glassBorder
@@ -137,9 +139,9 @@ fun PricingCard(
             features.forEach { FeatureRow(it) }
         }
         if (highlighted) {
-            PrimaryButton(ctaText, onClick, Modifier.fillMaxWidth())
+            PrimaryButton(ctaText, onClick, Modifier.fillMaxWidth(), enabled = ctaEnabled, loading = ctaLoading)
         } else {
-            SecondaryButton(ctaText, onClick, Modifier.fillMaxWidth())
+            SecondaryButton(ctaText, onClick, Modifier.fillMaxWidth(), enabled = ctaEnabled)
         }
     }
 }

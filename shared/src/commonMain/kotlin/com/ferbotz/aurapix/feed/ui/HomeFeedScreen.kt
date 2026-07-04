@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,9 +50,13 @@ fun HomeFeedScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             AuraTopBar(
-                title = "AuraPix",
-                navigationIcon = { Avatar(imageUrl = avatarUrl, size = 36.dp, border = true) },
-                actions = { CreditsBadge(credits) },
+                navigationIcon = {
+                    Text("AuraPix", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurface)
+                },
+                actions = {
+                    CreditsBadge(credits)
+                    Avatar(imageUrl = avatarUrl, size = 36.dp, border = true)
+                },
             )
         },
         bottomBar = { AuraBottomBar(selected = selectedTab, onSelect = onSelectTab) },

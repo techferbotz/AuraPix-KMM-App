@@ -31,9 +31,9 @@ private const val DEFAULT_MONETIZATION_JSON = """
     {
       "productId": "monthly",
       "type": "SUBSCRIPTION",
-      "title": "Monthly Pass",
-      "subtitle": "100 gems every month",
-      "priceLabel": "₹100/mo",
+      "title": "Premium",
+      "subtitle": "No ads + 100 gems every month",
+      "priceLabel": "₹99/mo",
       "gems": 100,
       "highlighted": true
     },

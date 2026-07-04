@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.HelpOutline
 import androidx.compose.material.icons.automirrored.rounded.Logout
 import androidx.compose.material.icons.rounded.Diamond
 import androidx.compose.material.icons.rounded.PrivacyTip
@@ -54,7 +53,6 @@ fun ProfileScreen(
     onUpgrade: () -> Unit = {},
     onPurchaseCredits: () -> Unit = {},
     onOpenSettings: () -> Unit = {},
-    onHelp: () -> Unit = {},
     onPrivacyPolicy: () -> Unit = {},
     onLogout: () -> Unit = {},
     onRetry: () -> Unit = {},
@@ -100,7 +98,6 @@ fun ProfileScreen(
                     onUpgrade = onUpgrade,
                     onPurchaseCredits = onPurchaseCredits,
                     onOpenSettings = onOpenSettings,
-                    onHelp = onHelp,
                     onPrivacyPolicy = onPrivacyPolicy,
                     onLogout = onLogout,
                 )
@@ -115,7 +112,6 @@ private fun ProfileContent(
     onUpgrade: () -> Unit,
     onPurchaseCredits: () -> Unit,
     onOpenSettings: () -> Unit,
-    onHelp: () -> Unit,
     onPrivacyPolicy: () -> Unit,
     onLogout: () -> Unit,
 ) {
@@ -187,7 +183,6 @@ private fun ProfileContent(
         GlassCard(Modifier.fillMaxWidth(), contentPadding = PaddingValues(horizontal = 16.dp)) {
             AuraListRow("Purchase Credits", leadingIcon = Icons.Rounded.ShoppingCart, onClick = onPurchaseCredits)
             AuraListRow("Settings", leadingIcon = Icons.Rounded.Settings, onClick = onOpenSettings)
-            AuraListRow("Help Center", leadingIcon = Icons.AutoMirrored.Rounded.HelpOutline, onClick = onHelp)
             AuraListRow("Privacy Policy", leadingIcon = Icons.Rounded.PrivacyTip, onClick = onPrivacyPolicy)
             AuraListRow(
                 "Logout",

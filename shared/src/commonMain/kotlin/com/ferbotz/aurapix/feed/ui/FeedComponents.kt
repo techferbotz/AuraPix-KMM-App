@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -24,6 +25,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,11 +40,12 @@ import com.ferbotz.aurapix.core.ui.components.StatusBadge
 import com.ferbotz.aurapix.core.ui.theme.AuraShapes
 import com.ferbotz.aurapix.core.ui.theme.AuraTheme
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 
 /**
  * The feed's showcase: a full-bleed [HorizontalPager] of large template cards used for the
- * first template tray. Auto-advances, but the timer re-keys on the current page so a manual
- * swipe (or a tap that changes the page) resets the countdown instead of fighting the user.
+ * first template tray. Auto-advances off the pager's *settled* page, so a manual swipe just
+ * resets the countdown and the scroll animation is never interrupted mid-flight.
  */
 @Composable
 fun HeroCarousel(
@@ -53,16 +56,21 @@ fun HeroCarousel(
     if (templates.isEmpty()) return
     val pagerState = rememberPagerState(pageCount = { templates.size })
 
-    LaunchedEffect(pagerState.currentPage, templates.size) {
+    // Restart the countdown whenever the pager *settles* on a page (auto or manual). Because the
+    // key is the pager (not currentPage, which flips mid-animation), the running animateScrollToPage
+    // is never cancelled halfway — which was what left it stuck between pages.
+    LaunchedEffect(pagerState, templates.size) {
         if (templates.size <= 1) return@LaunchedEffect
-        delay(4500)
-        pagerState.animateScrollToPage((pagerState.currentPage + 1) % templates.size)
+        snapshotFlow { pagerState.settledPage }.collectLatest {
+            delay(4500)
+            pagerState.animateScrollToPage((pagerState.currentPage + 1) % templates.size)
+        }
     }
 
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         HorizontalPager(
             state = pagerState,
-            contentPadding = PaddingValues(horizontal = 16.dp),
+            contentPadding = PaddingValues(horizontal = 32.dp),
             pageSpacing = 12.dp,
         ) { page ->
             val template = templates[page]
@@ -81,7 +89,7 @@ private fun HeroTemplateCard(template: TemplateItem, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(400.dp)
+            .aspectRatio(3f / 4f)
             .clip(AuraShapes.large)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.BottomStart,
