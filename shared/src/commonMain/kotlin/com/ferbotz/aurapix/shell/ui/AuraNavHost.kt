@@ -346,6 +346,7 @@ private fun HomeContainer(navController: NavHostController, auth: AuthState) {
 
             HistoryScreen(
                 items = (state as? UiState.Success)?.data ?: emptyList(),
+                loading = state is UiState.Loading,
                 credits = user.credits,
                 avatarUrl = user.avatarUrl,
                 selectedTab = tab,
