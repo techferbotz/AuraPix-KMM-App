@@ -13,78 +13,75 @@ import androidx.compose.ui.graphics.Color
  *  - [AuraExtendedColors]    : the extra, non-Material tokens (glass, glow, badges, scrim).
  *
  * To re-theme the whole app, edit the values here — nothing else needs to change.
+ * Palette: AuraPix Design System v1 (purple brand on a zinc-dark surface ladder).
  */
 
 // ---------------------------------------------------------------------------
-// Raw palette (AuraPix design tokens — Material 3 dark)
+// Raw palette (AuraPix design tokens — purple / zinc, Material 3 dark)
 // ---------------------------------------------------------------------------
-private val Red           = Color(0xFFD72638) // brand accent / primaryContainer
-private val RedBright     = Color(0xFFBD0B29)
-private val RedSoft       = Color(0xFFFFB3B1) // light red used for text/icons on dark
-private val OnRed         = Color(0xFF680010)
-private val OnRedLight    = Color(0xFFFFF2F1)
+private val Purple          = Color(0xFF8B5CF6) // brand accent / primary button
+private val PurpleSecondary = Color(0xFFA855F7) // secondary purple
+private val PurpleLight     = Color(0xFFC084FC) // light purple accent
+private val PurpleDeep      = Color(0xFF6D28D9) // deep purple
+private val Violet          = Color(0xFF4C1D95) // dark violet
+private val PurplePressed   = Color(0xFF7C3AED) // primary button pressed
 
-private val Ink           = Color(0xFF131313) // background / surface
-private val InkLowest     = Color(0xFF0E0E0E)
-private val InkLow        = Color(0xFF1C1B1B)
-private val InkContainer  = Color(0xFF201F1F)
-private val InkHigh       = Color(0xFF2A2A2A)
-private val InkHighest    = Color(0xFF353534)
-private val InkBright     = Color(0xFF3A3939)
+private val Bg              = Color(0xFF09090B) // primary background / navigation bar
+private val BgSecondary     = Color(0xFF18181B) // secondary background
+private val Surface         = Color(0xFF1F1F23) // surface / inputs
+private val Elevated        = Color(0xFF27272A) // elevated surface
+private val CardBg          = Color(0xFF2A2A2F) // card background / divider
+private val Zinc700         = Color(0xFF3F3F46) // border / bright surface
 
-private val Cloud         = Color(0xFFE5E2E1) // onSurface / onBackground
-private val Muted         = Color(0xFFE4BDBB) // onSurfaceVariant
-private val SurfaceVar    = Color(0xFF534342)
-private val OutlineColor  = Color(0xFFAB8887)
-private val OutlineVar    = Color(0xFF5C403F)
+private val White           = Color(0xFFFFFFFF) // primary text / icon
+private val TextSecondary   = Color(0xFFA1A1AA) // secondary text / muted icons
 
-private val ErrLight      = Color(0xFFFFB4AB)
-private val ErrContainer  = Color(0xFF93000A)
-private val OnErr         = Color(0xFF690005)
-private val OnErrContainer = Color(0xFFFFDAD6)
+private val ErrorRed        = Color(0xFFEF4444) // error / danger button
+private val ErrContainer    = Color(0xFF7F1D1D) // error container
+private val OnErrContainer  = Color(0xFFFECACA) // text on error container
 
-private val SecondaryCont = Color(0xFFA80025)
-private val TertiaryCont  = Color(0xFFBD494E)
+private val Success         = Color(0xFF22C55E)
+private val Warning         = Color(0xFFF59E0B)
 
 // ---------------------------------------------------------------------------
 // Material 3 color scheme  (drives every M3 component in the app)
 // ---------------------------------------------------------------------------
 val AuraDarkColorScheme: ColorScheme = darkColorScheme(
-    primary = RedSoft,
-    onPrimary = OnRed,
-    primaryContainer = Red,
-    onPrimaryContainer = OnRedLight,
-    inversePrimary = RedBright,
-    secondary = RedSoft,
-    onSecondary = OnRed,
-    secondaryContainer = SecondaryCont,
-    onSecondaryContainer = OnRedLight,
-    tertiary = RedSoft,
-    onTertiary = OnRed,
-    tertiaryContainer = TertiaryCont,
-    onTertiaryContainer = OnRedLight,
-    background = Ink,
-    onBackground = Cloud,
-    surface = Ink,
-    onSurface = Cloud,
-    surfaceVariant = SurfaceVar,
-    onSurfaceVariant = Muted,
-    surfaceDim = Ink,
-    surfaceBright = InkBright,
-    surfaceContainerLowest = InkLowest,
-    surfaceContainerLow = InkLow,
-    surfaceContainer = InkContainer,
-    surfaceContainerHigh = InkHigh,
-    surfaceContainerHighest = InkHighest,
-    error = ErrLight,
-    onError = OnErr,
+    primary = Purple,
+    onPrimary = White,
+    primaryContainer = Purple,
+    onPrimaryContainer = White,
+    inversePrimary = PurplePressed,
+    secondary = PurpleSecondary,
+    onSecondary = White,
+    secondaryContainer = PurpleDeep,
+    onSecondaryContainer = White,
+    tertiary = PurpleLight,
+    onTertiary = Violet,
+    tertiaryContainer = Violet,
+    onTertiaryContainer = PurpleLight,
+    background = Bg,
+    onBackground = White,
+    surface = Bg,
+    onSurface = White,
+    surfaceVariant = Elevated,
+    onSurfaceVariant = TextSecondary,
+    surfaceDim = Bg,
+    surfaceBright = Zinc700,
+    surfaceContainerLowest = Bg,
+    surfaceContainerLow = BgSecondary,
+    surfaceContainer = Surface,
+    surfaceContainerHigh = Elevated,
+    surfaceContainerHighest = CardBg,
+    error = ErrorRed,
+    onError = White,
     errorContainer = ErrContainer,
     onErrorContainer = OnErrContainer,
-    outline = OutlineColor,
-    outlineVariant = OutlineVar,
+    outline = Zinc700,
+    outlineVariant = CardBg,
     scrim = Color(0xFF000000),
-    inverseSurface = Cloud,
-    inverseOnSurface = Color(0xFF313030),
+    inverseSurface = White,
+    inverseOnSurface = Bg,
 )
 
 // ---------------------------------------------------------------------------
@@ -96,9 +93,9 @@ data class AuraExtendedColors(
     val glassSurface: Color,
     /** Hairline border drawn on glass surfaces. */
     val glassBorder: Color,
-    /** Brand red used for glow/shadow accents. */
+    /** Brand purple used for glow/shadow accents. */
     val glow: Color,
-    /** Small category/status badge background (burgundy). */
+    /** Small category/status badge background (deep purple). */
     val badge: Color,
     /** Dark scrim laid over imagery so text stays legible. */
     val scrim: Color,
@@ -111,12 +108,12 @@ data class AuraExtendedColors(
 )
 
 val AuraExtendedDark = AuraExtendedColors(
-    glassSurface = Color(0x99151515), // rgba(21, 21, 21, 0.60)
+    glassSurface = Color(0x9918181B), // rgba(24, 24, 27, 0.60)
     glassBorder = Color(0x14FFFFFF),  // white @ 8%
-    glow = Red,
-    badge = Color(0xFF7A1621),
+    glow = Purple,
+    badge = PurpleDeep,
     scrim = Color(0xCC000000),
     onImage = Color(0xFFFFFFFF),
-    success = Color(0xFF7BD88F),
-    warning = Color(0xFFFFB951),
+    success = Success,
+    warning = Warning,
 )

@@ -19,7 +19,7 @@ import androidx.compose.ui.unit.dp
 import com.ferbotz.aurapix.core.ui.theme.AuraShapes
 import com.ferbotz.aurapix.core.ui.theme.redGlow
 
-/** AuraPix logo lockup (glowing red icon tile + wordmark). Reused on Splash and Login. */
+/** AuraPix logo lockup (glowing purple icon tile + wordmark). Reused on Splash and Login. */
 @Composable
 fun BrandMark(
     modifier: Modifier = Modifier,

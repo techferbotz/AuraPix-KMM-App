@@ -85,9 +85,9 @@ fun SecondaryButton(
         enabled = enabled,
         shape = shape,
         modifier = modifier.heightIn(min = 56.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
         colors = ButtonDefaults.outlinedButtonColors(
-            contentColor = MaterialTheme.colorScheme.onSurface,
+            contentColor = MaterialTheme.colorScheme.primary,
         ),
         contentPadding = PaddingValues(horizontal = 24.dp),
     ) {
