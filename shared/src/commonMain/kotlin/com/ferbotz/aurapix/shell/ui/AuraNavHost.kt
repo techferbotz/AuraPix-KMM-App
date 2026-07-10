@@ -181,14 +181,17 @@ fun AuraNavHost(
             val genState by generationVm.state.collectAsState()
             val monetization = remember { DataModule.remoteConfig.monetization }
             var progress by remember { mutableFloatStateOf(0f) }
-            var attempt by remember { mutableStateOf(0) }
             var showCreditsPaywall by remember { mutableStateOf(false) }
 
-            // Indeterminate-style: ease toward 90% while the server generates + we long-poll.
-            // Keyed on [attempt] so a post-paywall retry restarts the ring from zero.
-            LaunchedEffect(attempt) {
-                progress = 0f
-                animate(0f, 0.9f, animationSpec = tween(durationMillis = 12_000)) { value, _ -> progress = value }
+            // Run the "indeterminate" ring only while a generation is actually in flight. It freezes
+            // on error/success — e.g. behind the out-of-credits paywall — and restarts from 0 when a
+            // purchase-triggered retry flips the state back to Loading.
+            val generating = genState is UiState.Loading
+            LaunchedEffect(generating) {
+                if (generating) {
+                    progress = 0f
+                    animate(0f, 0.9f, animationSpec = tween(durationMillis = 12_000)) { value, _ -> progress = value }
+                }
             }
             LaunchedEffect(genState) {
                 when (val s = genState) {
@@ -221,8 +224,7 @@ fun AuraNavHost(
                     onPurchased = { totalCredits, subscriptionStatus ->
                         DataModule.userManager.applyBilling(totalCredits, subscriptionStatus)
                         showCreditsPaywall = false
-                        attempt++             // restart the progress ring
-                        generationVm.retry()  // credits topped up → regenerate the same request
+                        generationVm.retry()  // credits topped up → regenerate (state → Loading restarts the ring)
                     },
                 )
             }
