@@ -43,6 +43,9 @@ private val OnErrContainer  = Color(0xFFFECACA) // text on error container
 private val Success         = Color(0xFF22C55E)
 private val Warning         = Color(0xFFF59E0B)
 
+private val PremiumGold      = Color(0xFFF5C563) // premium (subscription) accent — borders/icons/glow/CTA
+private val OnPremiumGold    = Color(0xFF3A2606) // text/icon drawn on the gold CTA
+
 // ---------------------------------------------------------------------------
 // Material 3 color scheme  (drives every M3 component in the app)
 // ---------------------------------------------------------------------------
@@ -105,6 +108,10 @@ data class AuraExtendedColors(
     val success: Color,
     /** Caution accent. */
     val warning: Color,
+    /** Premium (subscription) accent — gold, to set membership apart from purple gem purchases. */
+    val premium: Color,
+    /** Foreground color for content drawn on top of the gold [premium] fill. */
+    val onPremium: Color,
 )
 
 val AuraExtendedDark = AuraExtendedColors(
@@ -116,4 +123,6 @@ val AuraExtendedDark = AuraExtendedColors(
     onImage = Color(0xFFFFFFFF),
     success = Success,
     warning = Warning,
+    premium = PremiumGold,
+    onPremium = OnPremiumGold,
 )

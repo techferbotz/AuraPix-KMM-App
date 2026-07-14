@@ -313,6 +313,7 @@ fun AuraNavHost(
             PurchaseCreditsScreen(
                 credits = currentUserState().credits,
                 packs = billing.plans.filter { !it.isSubscription },
+                generationCostGems = DataModule.remoteConfig.monetization.generationCostGems,
                 loading = billing.loading,
                 error = billing.error,
                 purchasingProductId = billing.purchasingProductId,

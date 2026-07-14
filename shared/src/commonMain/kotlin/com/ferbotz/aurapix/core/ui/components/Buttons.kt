@@ -16,14 +16,19 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import com.ferbotz.aurapix.core.ui.theme.AuraTheme
 import com.ferbotz.aurapix.core.ui.theme.redGlow
 
 /**
- * The single primary call-to-action across the app: filled red, full (pill) radius,
- * 56dp tall, [MaterialTheme.typography.labelLarge] text, with a brand red glow.
+ * The single primary call-to-action across the app: filled, full (pill) radius,
+ * 56dp tall, [MaterialTheme.typography.labelLarge] text, with a brand glow.
  * Replaces the many differently-sized/rounded primary buttons in the mockups.
+ *
+ * Defaults to the purple brand. Pass [containerColor]/[contentColor]/[glowColor] to re-accent it
+ * (e.g. the gold Premium CTA) without introducing a second button component.
  */
 @Composable
 fun PrimaryButton(
@@ -34,17 +39,20 @@ fun PrimaryButton(
     loading: Boolean = false,
     leadingIcon: ImageVector? = null,
     trailingIcon: ImageVector? = null,
+    containerColor: Color = MaterialTheme.colorScheme.primaryContainer,
+    contentColor: Color = MaterialTheme.colorScheme.onPrimaryContainer,
+    glowColor: Color = AuraTheme.colors.glow,
 ) {
     val shape = CircleShape
-    val glow = if (enabled && !loading) Modifier.redGlow(shape, elevation = 16.dp) else Modifier
+    val glow = if (enabled && !loading) Modifier.redGlow(shape, elevation = 16.dp, color = glowColor) else Modifier
     Button(
         onClick = onClick,
         enabled = enabled && !loading,
         shape = shape,
         modifier = modifier.heightIn(min = 56.dp).then(glow),
         colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            containerColor = containerColor,
+            contentColor = contentColor,
             disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
             disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
         ),

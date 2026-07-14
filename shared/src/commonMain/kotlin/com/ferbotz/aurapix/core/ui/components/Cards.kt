@@ -19,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
 import com.ferbotz.aurapix.core.ui.theme.AuraShapes
@@ -76,9 +77,9 @@ fun OverlineLabel(text: String, modifier: Modifier = Modifier) {
     )
 }
 
-/** A single "✓ feature" line used in pricing/benefit lists. */
+/** A single "✓ feature" line used in pricing/benefit lists. [tint] recolors the check (e.g. gold on Premium). */
 @Composable
-fun FeatureRow(text: String, modifier: Modifier = Modifier) {
+fun FeatureRow(text: String, modifier: Modifier = Modifier, tint: Color = AuraTheme.colors.success) {
     Row(
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
@@ -87,7 +88,7 @@ fun FeatureRow(text: String, modifier: Modifier = Modifier) {
         Icon(
             Icons.Rounded.Check,
             contentDescription = null,
-            tint = AuraTheme.colors.success,
+            tint = tint,
             modifier = Modifier.size(18.dp),
         )
         Text(text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -95,8 +96,10 @@ fun FeatureRow(text: String, modifier: Modifier = Modifier) {
 }
 
 /**
- * One pricing card shared by Premium Plans and Purchase Credits. [highlighted] = the
- * featured tier (red border + glow + filled CTA); otherwise a glass card with an outline CTA.
+ * One pricing card used by Premium Plans. [highlighted] = the featured tier
+ * (accent border + glow + filled CTA); otherwise a glass card with an outline CTA.
+ * [accentColor]/[onAccentColor] recolor the border, glow, badge, feature checks and CTA
+ * (purple by default; gold for the Premium subscription).
  */
 @Composable
 fun PricingCard(
@@ -111,19 +114,21 @@ fun PricingCard(
     badgeText: String? = null,
     ctaEnabled: Boolean = true,
     ctaLoading: Boolean = false,
+    accentColor: Color = MaterialTheme.colorScheme.primary,
+    onAccentColor: Color = MaterialTheme.colorScheme.onPrimary,
 ) {
     val shape = AuraShapes.large
-    val borderColor = if (highlighted) MaterialTheme.colorScheme.primaryContainer else AuraTheme.colors.glassBorder
+    val borderColor = if (highlighted) accentColor else AuraTheme.colors.glassBorder
     Column(
         modifier = modifier
-            .then(if (highlighted) Modifier.redGlow(shape, elevation = 24.dp) else Modifier)
+            .then(if (highlighted) Modifier.redGlow(shape, elevation = 24.dp, color = accentColor) else Modifier)
             .clip(shape)
             .background(if (highlighted) MaterialTheme.colorScheme.surfaceContainer else AuraTheme.colors.glassSurface)
-            .border(1.dp, borderColor, shape)
+            .border(if (highlighted) 2.dp else 1.dp, borderColor, shape)
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        badgeText?.let { StatusBadge(it) }
+        badgeText?.let { StatusBadge(it, containerColor = accentColor, contentColor = onAccentColor) }
         Text(title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Row(verticalAlignment = Alignment.Bottom) {
             Text(price, style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.onSurface)
@@ -136,10 +141,15 @@ fun PricingCard(
             }
         }
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            features.forEach { FeatureRow(it) }
+            val checkTint = if (highlighted) accentColor else AuraTheme.colors.success
+            features.forEach { FeatureRow(it, tint = checkTint) }
         }
         if (highlighted) {
-            PrimaryButton(ctaText, onClick, Modifier.fillMaxWidth(), enabled = ctaEnabled, loading = ctaLoading)
+            PrimaryButton(
+                ctaText, onClick, Modifier.fillMaxWidth(),
+                enabled = ctaEnabled, loading = ctaLoading,
+                containerColor = accentColor, contentColor = onAccentColor, glowColor = accentColor,
+            )
         } else {
             SecondaryButton(ctaText, onClick, Modifier.fillMaxWidth(), enabled = ctaEnabled)
         }

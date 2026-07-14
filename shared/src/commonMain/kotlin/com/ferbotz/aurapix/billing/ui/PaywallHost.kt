@@ -39,9 +39,12 @@ fun PaywallHost(
             .onFailure { packages = emptyList(); error = "Couldn't load plans. Please try again."; loading = false }
     }
 
-    // productId → gems, from the monetization config (RC has price/availability; config has gems).
+    // productId → gems / highlight, from the monetization config (RC has price/availability; config has gems).
     val gemsByProduct = remember(config) {
         (config.freeUserOffers + config.proUserOffers).associate { it.productId to it.gems }
+    }
+    val highlightByProduct = remember(config) {
+        (config.freeUserOffers + config.proUserOffers).associate { it.productId to it.highlighted }
     }
 
     PaywallBottomSheet(
@@ -51,6 +54,7 @@ fun PaywallHost(
         errorMessage = error,
         generationCostGems = config.generationCostGems,
         gemsForProduct = { gemsByProduct[it] },
+        highlightForProduct = { highlightByProduct[it] == true },
         onRetry = { reloadTick++ },
         onDismiss = onDismiss,
         onSelect = { pkg ->
