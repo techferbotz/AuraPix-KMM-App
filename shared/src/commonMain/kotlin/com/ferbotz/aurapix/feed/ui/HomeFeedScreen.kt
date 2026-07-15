@@ -14,15 +14,15 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.ferbotz.aurapix.core.ui.components.AuraBottomBar
 import com.ferbotz.aurapix.core.ui.components.AuraTab
+import com.ferbotz.aurapix.core.ui.components.AuraTabScaffold
 import com.ferbotz.aurapix.core.ui.components.AuraTopBar
 import com.ferbotz.aurapix.core.ui.components.Avatar
 import com.ferbotz.aurapix.core.ui.components.CreditsBadge
@@ -45,9 +45,10 @@ fun HomeFeedScreen(
     selectedTab: AuraTab = AuraTab.Feed,
     onSelectTab: (AuraTab) -> Unit = {},
 ) {
-    Scaffold(
+    AuraTabScaffold(
+        selectedTab = selectedTab,
+        onSelectTab = onSelectTab,
         modifier = modifier,
-        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             AuraTopBar(
                 navigationIcon = {
@@ -59,9 +60,8 @@ fun HomeFeedScreen(
                 },
             )
         },
-        bottomBar = { AuraBottomBar(selected = selectedTab, onSelect = onSelectTab) },
-    ) { innerPadding ->
-        Box(Modifier.fillMaxSize().padding(innerPadding)) {
+    ) { contentPadding ->
+        Box(Modifier.fillMaxSize().padding(top = contentPadding.calculateTopPadding())) {
             when (feedState) {
                 is UiState.Loading, UiState.Idle ->
                     CircularProgressIndicator(
@@ -86,6 +86,7 @@ fun HomeFeedScreen(
                     } else {
                         FeedContent(
                             sections = feedState.data,
+                            bottomInset = contentPadding.calculateBottomPadding(),
                             onTemplateClick = onTemplateClick,
                             onCategoryClick = onCategoryClick,
                             onSeeAll = onSeeAll,
@@ -99,13 +100,14 @@ fun HomeFeedScreen(
 @Composable
 private fun FeedContent(
     sections: List<FeedSection>,
+    bottomInset: Dp,
     onTemplateClick: (TemplateItem) -> Unit,
     onCategoryClick: (CategoryItem) -> Unit,
     onSeeAll: (FeedSection) -> Unit,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(vertical = 16.dp),
+        contentPadding = PaddingValues(top = 16.dp, bottom = bottomInset),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
         itemsIndexed(sections, key = { _, section -> section.id }) { index, section ->

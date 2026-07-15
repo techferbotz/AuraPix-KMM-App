@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -24,20 +25,20 @@ import androidx.compose.material.icons.rounded.WorkspacePremium
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.ferbotz.aurapix.core.ui.base.UiState
 import com.ferbotz.aurapix.core.ui.base.userMessage
-import com.ferbotz.aurapix.core.ui.components.AuraBottomBar
 import com.ferbotz.aurapix.core.ui.components.AuraIconButton
 import com.ferbotz.aurapix.core.ui.components.AuraListRow
 import com.ferbotz.aurapix.core.ui.components.AuraTab
+import com.ferbotz.aurapix.core.ui.components.AuraTabScaffold
 import com.ferbotz.aurapix.core.ui.components.AuraTopBar
 import com.ferbotz.aurapix.core.ui.components.Avatar
 import com.ferbotz.aurapix.core.ui.components.GlassCard
@@ -59,18 +60,18 @@ fun ProfileScreen(
     selectedTab: AuraTab = AuraTab.Profile,
     onSelectTab: (AuraTab) -> Unit = {},
 ) {
-    Scaffold(
+    AuraTabScaffold(
+        selectedTab = selectedTab,
+        onSelectTab = onSelectTab,
         modifier = modifier,
-        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             AuraTopBar(
                 title = "Profile",
                 actions = { AuraIconButton(Icons.Rounded.Settings, "Settings", onOpenSettings) },
             )
         },
-        bottomBar = { AuraBottomBar(selected = selectedTab, onSelect = onSelectTab) },
-    ) { innerPadding ->
-        Box(Modifier.fillMaxSize().padding(innerPadding)) {
+    ) { pad ->
+        Box(Modifier.fillMaxSize().padding(top = pad.calculateTopPadding())) {
             when (state) {
                 is UiState.Loading, UiState.Idle ->
                     CircularProgressIndicator(
@@ -95,6 +96,7 @@ fun ProfileScreen(
 
                 is UiState.Success -> ProfileContent(
                     profile = state.data,
+                    bottomInset = pad.calculateBottomPadding(),
                     onUpgrade = onUpgrade,
                     onPurchaseCredits = onPurchaseCredits,
                     onOpenSettings = onOpenSettings,
@@ -109,6 +111,7 @@ fun ProfileScreen(
 @Composable
 private fun ProfileContent(
     profile: ProfileUi,
+    bottomInset: Dp,
     onUpgrade: () -> Unit,
     onPurchaseCredits: () -> Unit,
     onOpenSettings: () -> Unit,
@@ -199,6 +202,7 @@ private fun ProfileContent(
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
         )
+        Spacer(Modifier.height(bottomInset))
     }
 }
 

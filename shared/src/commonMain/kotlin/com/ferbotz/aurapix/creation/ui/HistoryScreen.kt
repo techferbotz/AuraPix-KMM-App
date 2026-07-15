@@ -20,7 +20,6 @@ import androidx.compose.material.icons.rounded.PhotoLibrary
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -31,8 +30,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.ferbotz.aurapix.core.ui.components.AuraBottomBar
 import com.ferbotz.aurapix.core.ui.components.AuraTab
+import com.ferbotz.aurapix.core.ui.components.AuraTabScaffold
 import com.ferbotz.aurapix.core.ui.components.AuraTopBar
 import com.ferbotz.aurapix.core.ui.components.Avatar
 import com.ferbotz.aurapix.core.ui.components.CreditsBadge
@@ -55,9 +54,10 @@ fun HistoryScreen(
     selectedTab: AuraTab = AuraTab.MyCreations,
     onSelectTab: (AuraTab) -> Unit = {},
 ) {
-    Scaffold(
+    AuraTabScaffold(
+        selectedTab = selectedTab,
+        onSelectTab = onSelectTab,
         modifier = modifier,
-        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             AuraTopBar(
                 navigationIcon = {
@@ -69,9 +69,8 @@ fun HistoryScreen(
                 },
             )
         },
-        bottomBar = { AuraBottomBar(selected = selectedTab, onSelect = onSelectTab) },
-    ) { innerPadding ->
-        Box(Modifier.fillMaxSize().padding(innerPadding)) {
+    ) { pad ->
+        Box(Modifier.fillMaxSize().padding(top = pad.calculateTopPadding())) {
             when {
                 loading -> CircularProgressIndicator(
                     modifier = Modifier.align(Alignment.Center),
@@ -85,7 +84,7 @@ fun HistoryScreen(
 
                 else -> LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
+                    contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = pad.calculateBottomPadding()),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     items(items.chunked(2)) { row ->

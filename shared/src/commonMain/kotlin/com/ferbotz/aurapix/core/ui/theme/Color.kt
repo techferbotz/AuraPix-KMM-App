@@ -96,6 +96,9 @@ data class AuraExtendedColors(
     val glassSurface: Color,
     /** Hairline border drawn on glass surfaces. */
     val glassBorder: Color,
+    /** Fill for the floating bottom nav — more opaque than [glassSurface] so it reads solid while
+     *  content still shows through the side margins. */
+    val navSurface: Color,
     /** Brand purple used for glow/shadow accents. */
     val glow: Color,
     /** Small category/status badge background (deep purple). */
@@ -117,6 +120,7 @@ data class AuraExtendedColors(
 val AuraExtendedDark = AuraExtendedColors(
     glassSurface = Color(0x9918181B), // rgba(24, 24, 27, 0.60)
     glassBorder = Color(0x14FFFFFF),  // white @ 8%
+    navSurface = Color(0xE618181B),   // rgba(24, 24, 27, 0.90) — floating nav, less see-through
     glow = Purple,
     badge = PurpleDeep,
     scrim = Color(0xCC000000),

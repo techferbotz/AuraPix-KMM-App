@@ -4,8 +4,6 @@ import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -25,8 +23,8 @@ import com.ferbotz.aurapix.core.auth.rememberGoogleAuthProvider
 import com.ferbotz.aurapix.core.data.remote.ApiError
 import com.ferbotz.aurapix.core.di.DataModule
 import com.ferbotz.aurapix.core.media.rememberImageActions
-import com.ferbotz.aurapix.core.ui.components.AuraBottomBar
 import com.ferbotz.aurapix.core.ui.components.AuraTab
+import com.ferbotz.aurapix.core.ui.components.AuraTabScaffold
 import com.ferbotz.aurapix.core.ui.components.WebViewScreen
 import com.ferbotz.aurapix.billing.ui.CreditsSuccessScreen
 import com.ferbotz.aurapix.billing.ui.BillingViewModel
@@ -424,12 +422,12 @@ private fun HomeContainer(navController: NavHostController, auth: AuthState) {
                 }
             }
 
-            Scaffold(
-                bottomBar = { AuraBottomBar(selected = tab, onSelect = { tab = it }) },
-                containerColor = MaterialTheme.colorScheme.background,
-            ) { innerPadding ->
+            AuraTabScaffold(
+                selectedTab = tab,
+                onSelectTab = { tab = it },
+            ) { pad ->
                 LoginScreen(
-                    modifier = Modifier.fillMaxSize().padding(innerPadding),
+                    modifier = Modifier.fillMaxSize().padding(pad),
                     loading = loginState is LoginUiState.Loading,
                     errorMessage = (loginState as? LoginUiState.Error)?.message,
                     // Runs the platform Google flow → ID token → POST /auth/google → JWT stored.
