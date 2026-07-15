@@ -38,6 +38,13 @@ private class IosImageActions(private val scope: CoroutineScope) : ImageActions 
             ?.presentViewController(activityVc, animated = true, completion = null)
     }
 
+    override fun shareLink(url: String) {
+        val nsUrl = NSURL.URLWithString(url) ?: return
+        val activityVc = UIActivityViewController(activityItems = listOf(nsUrl), applicationActivities = null)
+        UIApplication.sharedApplication.keyWindow?.rootViewController
+            ?.presentViewController(activityVc, animated = true, completion = null)
+    }
+
     /** Fetches [url] off the main thread, then delivers a [UIImage] back on the main thread. */
     private fun withImage(url: String, onImage: (UIImage) -> Unit) {
         val nsUrl = NSURL.URLWithString(url) ?: return

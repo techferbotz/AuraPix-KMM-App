@@ -14,5 +14,15 @@ struct ContentView: View {
     var body: some View {
         ComposeView()
             .ignoresSafeArea()
+            // Universal Link opened while the app was not running.
+            .onOpenURL { url in
+                _ = DeepLinks.shared.handleUrl(url: url.absoluteString)
+            }
+            // Universal Link handed off via a browsing user activity.
+            .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { activity in
+                if let url = activity.webpageURL {
+                    _ = DeepLinks.shared.handleUrl(url: url.absoluteString)
+                }
+            }
     }
 }

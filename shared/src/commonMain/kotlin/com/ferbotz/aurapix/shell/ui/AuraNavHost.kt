@@ -14,9 +14,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.ferbotz.aurapix.core.auth.rememberGoogleAuthProvider
@@ -62,6 +64,7 @@ import kotlinx.coroutines.delay
 private const val PRIVACY_URL = "https://policies.google.com/privacy"
 private const val TERMS_URL = "https://policies.google.com/terms"
 private const val SUPPORT_URL = "https://support.google.com"
+private const val TEMPLATE_SHARE_BASE = "https://aurapix.ferbotz.com/template/"
 
 @Composable
 fun AuraNavHost(
@@ -71,6 +74,16 @@ fun AuraNavHost(
     // Shared across TemplateDetail → Processing → Result/Failed so the generation survives navigation.
     val generationVm = remember { GenerationViewModel(DataModule.creationsRepository) }
     DisposableEffect(Unit) { onDispose { generationVm.onCleared() } }
+
+    // Deep link: route to the template once Splash has handed off (keeps Home in the back stack).
+    val currentEntry by navController.currentBackStackEntryAsState()
+    val pendingTemplateId by DeepLinks.pendingTemplateId.collectAsState()
+    LaunchedEffect(pendingTemplateId, currentEntry) {
+        val id = pendingTemplateId ?: return@LaunchedEffect
+        if (currentEntry?.destination?.hasRoute(SplashRoute::class) != false) return@LaunchedEffect
+        navController.navigate(TemplateDetailRoute(id, ""))
+        DeepLinks.consume()
+    }
 
     NavHost(navController = navController, startDestination = SplashRoute) {
         composable<SplashRoute> {
@@ -134,10 +147,13 @@ fun AuraNavHost(
                 navController.navigate(ProcessingRoute)
             }
 
+            val imageActions = rememberImageActions()
+
             TemplateDetailScreen(
                 state = state,
                 generationCost = cost,
                 onBack = { navController.popBackStack() },
+                onShare = { imageActions.shareLink("$TEMPLATE_SHARE_BASE${route.templateId}") },
                 onGenerate = { images ->
                     when {
                         !auth.isLoggedIn -> loginImages = images

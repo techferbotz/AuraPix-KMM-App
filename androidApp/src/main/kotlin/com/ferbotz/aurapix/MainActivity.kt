@@ -1,5 +1,6 @@
 package com.ferbotz.aurapix
 
+import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -9,6 +10,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.ferbotz.aurapix.core.di.DataModule
+import com.ferbotz.aurapix.shell.ui.DeepLinks
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -22,9 +24,21 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         // Configure RevenueCat here (Android-only) with the backend user id, if signed in.
         DataModule.paymentManager.configure(DataModule.preferences.userId)
+        // Prime the deep link bus before composing so the NavHost picks it up on first frame.
+        handleDeepLink(intent)
         setContent {
             App()
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleDeepLink(intent)
+    }
+
+    private fun handleDeepLink(intent: Intent?) {
+        intent?.data?.toString()?.let { DeepLinks.handleUrl(it) }
     }
 }
 

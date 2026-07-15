@@ -56,6 +56,16 @@ private class AndroidImageActions(
         }
     }
 
+    override fun shareLink(url: String) {
+        val send = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, url)
+        }
+        appContext.startActivity(
+            Intent.createChooser(send, "Share").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        )
+    }
+
     private suspend fun fetch(url: String): ByteArray? = withContext(Dispatchers.IO) {
         runCatching { URL(url).openStream().use { it.readBytes() } }.getOrNull()
     }

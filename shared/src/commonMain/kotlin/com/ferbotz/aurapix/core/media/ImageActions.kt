@@ -9,6 +9,9 @@ interface ImageActions {
 
     /** Share the image at [url] via the platform share sheet. */
     fun share(url: String)
+
+    /** Share a plain-text link (e.g. a template URL) via the platform share sheet. */
+    fun shareLink(url: String)
 }
 
 /** Remembers the platform [ImageActions] (needs a [Context]/root view controller from composition). */
