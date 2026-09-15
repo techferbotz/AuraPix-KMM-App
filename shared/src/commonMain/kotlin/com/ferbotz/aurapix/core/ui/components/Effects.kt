@@ -40,7 +40,9 @@ import kotlin.random.Random
 @Composable
 fun BoxScope.AmbientGlow(
     color: Color = MaterialTheme.colorScheme.primary,
-    alpha: Float = 0.28f,
+    // Halved on light: the same 28% violet that reads as emission against near-black turns into
+    // flat haze against a lavender ground, where there's no darkness for it to bloom out of.
+    alpha: Float = if (AuraTheme.isDark) 0.28f else 0.14f,
     diameter: Dp = 600.dp,
     offsetX: Dp = (-105).dp,
     offsetY: Dp = 120.dp,
@@ -71,7 +73,7 @@ fun BoxScope.AmbientErrorGlow(
     offsetY: Dp = 60.dp,
 ) = AmbientGlow(
     color = MaterialTheme.colorScheme.error,
-    alpha = 0.14f,
+    alpha = if (AuraTheme.isDark) 0.14f else 0.08f,
     diameter = diameter,
     offsetX = offsetX,
     offsetY = offsetY,

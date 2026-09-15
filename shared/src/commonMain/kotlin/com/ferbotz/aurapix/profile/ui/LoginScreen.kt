@@ -80,14 +80,20 @@ fun LoginScreen(
 
 @Preview
 @Composable
-private fun LoginScreenPreview() {
-    AuraPixTheme { LoginScreen() }
+private fun LoginScreenDarkPreview() {
+    AuraPixTheme(darkTheme = true) { LoginScreen() }
+}
+
+@Preview
+@Composable
+private fun LoginScreenLightPreview() {
+    AuraPixTheme(darkTheme = false) { LoginScreen() }
 }
 
 @Preview
 @Composable
 private fun LoginScreenErrorPreview() {
-    AuraPixTheme {
+    AuraPixTheme(darkTheme = true) {
         LoginScreen(errorMessage = "Sign-in was cancelled. Please try again.")
     }
 }

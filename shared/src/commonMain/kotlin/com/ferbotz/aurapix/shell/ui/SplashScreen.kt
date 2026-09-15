@@ -60,6 +60,12 @@ fun SplashScreen(modifier: Modifier = Modifier) {
 
 @Preview
 @Composable
-private fun SplashScreenPreview() {
-    AuraPixTheme { SplashScreen() }
+private fun SplashScreenDarkPreview() {
+    AuraPixTheme(darkTheme = true) { SplashScreen() }
+}
+
+@Preview
+@Composable
+private fun SplashScreenLightPreview() {
+    AuraPixTheme(darkTheme = false) { SplashScreen() }
 }

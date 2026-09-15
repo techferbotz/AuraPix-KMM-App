@@ -23,21 +23,28 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import aurapix.shared.generated.resources.Res
+import aurapix.shared.generated.resources.app_logo
 import aurapix.shared.generated.resources.app_logo_mark
 import com.ferbotz.aurapix.core.ui.theme.AuraTheme
 import org.jetbrains.compose.resources.painterResource
 
 /**
- * The logo mark on a dark ground.
+ * The logo mark, on either ground.
  *
- * Uses the **knockout** vector (`app_logo_mark`), not `app_logo`: the shipped launcher vector
- * opens with an opaque `#F0ECFD` full-bleed square, which renders as a hard-edged light tile on
- * our near-black surfaces. Brief §2.7 — the plate is removed so the violet shapes sit directly
- * on the background, and the mark gets a glow instead of an edge.
+ * **Dark** uses the knockout vector (`app_logo_mark`). The shipped launcher vector opens with an
+ * opaque `#F0ECFD` full-bleed square, which renders as a hard-edged light tile on our near-black
+ * surfaces — brief §2.7. The plate is removed so the violet shapes sit directly on the
+ * background, and the mark gets a glow instead of an edge.
+ *
+ * **Light** uses the plated vector (`app_logo`) — the mirror problem. Knocked out, the mark's
+ * palest stops (`#ECE5FD`, `#F0EBFD`) sit within a hair of the lavender ground and the top of the
+ * mark dissolves. The plate is exactly the ground colour, so on light it reads as no plate at all
+ * while still giving those stops something to sit on.
  *
  * The glow is two stacked radial gradients standing in for the design's two CSS drop-shadows
  * (24px @ 55% violet, 64px @ 40% deep violet); Compose can't blur an arbitrary alpha shape, so
- * the light is painted behind the mark rather than derived from it.
+ * the light is painted behind the mark rather than derived from it. It's dialled back on light,
+ * where a bright violet bloom on a pale ground turns to haze instead of reading as emission.
  */
 @Composable
 fun BrandLogo(
@@ -45,21 +52,24 @@ fun BrandLogo(
     size: Dp = 96.dp,
     glow: Boolean = true,
 ) {
+    val dark = AuraTheme.isDark
     Box(modifier, contentAlignment = Alignment.Center) {
         if (glow) {
             AmbientGlowSpot(
                 modifier = Modifier.size(size * 2.6f),
                 color = AuraTheme.colors.glow,
-                alpha = 0.32f,
+                alpha = if (dark) 0.32f else 0.16f,
             )
             AmbientGlowSpot(
                 modifier = Modifier.size(size * 1.5f),
                 color = AuraTheme.colors.gradientStart,
-                alpha = 0.40f,
+                alpha = if (dark) 0.40f else 0.18f,
             )
         }
         Image(
-            painter = painterResource(Res.drawable.app_logo_mark),
+            painter = painterResource(
+                if (dark) Res.drawable.app_logo_mark else Res.drawable.app_logo
+            ),
             contentDescription = "AuraPix",
             modifier = Modifier.size(size),
         )
@@ -116,11 +126,7 @@ fun BrandBarLockup(modifier: Modifier = Modifier) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(AuraTheme.spacing.xs),
     ) {
-        Image(
-            painter = painterResource(Res.drawable.app_logo_mark),
-            contentDescription = "AuraPix",
-            modifier = Modifier.size(30.dp),
-        )
+        BrandLogo(size = 30.dp, glow = false)
         AuraWordmark(
             style = MaterialTheme.typography.headlineSmall.copy(
                 fontWeight = FontWeight.ExtraBold,

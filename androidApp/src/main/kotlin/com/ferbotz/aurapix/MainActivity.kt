@@ -14,12 +14,14 @@ import com.ferbotz.aurapix.shell.ui.DeepLinks
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
-        // Edge-to-edge for the whole activity: transparent system bars with light icons
-        // (the app is always dark). Compose consumes the insets via statusBarsPadding /
-        // the M3 NavigationBar, so content never sits under the bars.
+        // Edge-to-edge for the whole activity with transparent system bars. `auto` flips the
+        // icon tint with the system's night mode, which is what AuraPixTheme follows — pinning
+        // these to `dark` (light icons) would leave them invisible on the light theme.
+        // Compose consumes the insets via statusBarsPadding / the floating nav, so content
+        // never sits under the bars.
         enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
-            navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
+            statusBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT),
         )
         super.onCreate(savedInstanceState)
         // Configure RevenueCat here (Android-only) with the backend user id, if signed in.
