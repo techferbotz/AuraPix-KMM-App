@@ -24,7 +24,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
 import com.ferbotz.aurapix.core.ui.theme.AuraShapes
 import com.ferbotz.aurapix.core.ui.theme.AuraTheme
-import com.ferbotz.aurapix.core.ui.theme.redGlow
+import com.ferbotz.aurapix.core.ui.theme.auraGlow
 
 /**
  * The one glass surface used for panels/cards over busy backgrounds. Translucent fill +
@@ -40,7 +40,7 @@ fun GlassCard(
 ) {
     Column(
         modifier = modifier
-            .then(if (glow) Modifier.redGlow(shape, elevation = 20.dp) else Modifier)
+            .then(if (glow) Modifier.auraGlow(shape, elevation = 20.dp) else Modifier)
             .clip(shape)
             .background(AuraTheme.colors.glassSurface)
             .border(1.dp, AuraTheme.colors.glassBorder, shape)
@@ -121,7 +121,7 @@ fun PricingCard(
     val borderColor = if (highlighted) accentColor else AuraTheme.colors.glassBorder
     Column(
         modifier = modifier
-            .then(if (highlighted) Modifier.redGlow(shape, elevation = 24.dp, color = accentColor) else Modifier)
+            .then(if (highlighted) Modifier.auraGlow(shape, elevation = 24.dp, color = accentColor) else Modifier)
             .clip(shape)
             .background(if (highlighted) MaterialTheme.colorScheme.surfaceContainer else AuraTheme.colors.glassSurface)
             .border(if (highlighted) 2.dp else 1.dp, borderColor, shape)
@@ -148,6 +148,9 @@ fun PricingCard(
             PrimaryButton(
                 ctaText, onClick, Modifier.fillMaxWidth(),
                 enabled = ctaEnabled, loading = ctaLoading,
+                // Flat fill, not the brand gradient: this CTA is re-accented per card
+                // (gold on Premium, violet on gem packs) and the ramp is violet-only.
+                containerBrush = null,
                 containerColor = accentColor, contentColor = onAccentColor, glowColor = accentColor,
             )
         } else {

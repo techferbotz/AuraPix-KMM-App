@@ -37,11 +37,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.ferbotz.aurapix.core.ui.theme.AuraTheme
-import com.ferbotz.aurapix.core.ui.theme.redGlow
+import com.ferbotz.aurapix.core.ui.theme.auraCtaBrush
+import com.ferbotz.aurapix.core.ui.theme.auraGlow
 
 /** Pill showing the user's remaining credits. Used in every top bar that needs it. */
 @Composable
@@ -54,6 +56,7 @@ fun CreditsBadge(
         modifier = modifier
             .clip(CircleShape)
             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            .border(1.dp, AuraTheme.colors.glassBorder, CircleShape)
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -164,9 +167,10 @@ fun AuraBottomBar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .height(52.dp)
                 .background(AuraTheme.colors.navSurface, CircleShape)
                 .border(1.dp, AuraTheme.colors.glassBorder, CircleShape)
-                .padding(8.dp),
+                .padding(horizontal = 10.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -183,28 +187,38 @@ private fun NavItem(
     selected: Boolean,
     onClick: () -> Unit,
 ) {
+    // 220ms, per the design's transition note.
     val fg by animateColorAsState(
-        if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+        if (selected) MaterialTheme.colorScheme.onPrimary else AuraTheme.colors.muted,
         animationSpec = tween(220),
         label = "navItemFg",
     )
-    val bg by animateColorAsState(
-        if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
-        animationSpec = tween(220),
-        label = "navItemBg",
-    )
     val shape = CircleShape
     val interaction = remember { MutableInteractionSource() }
+    val brush = auraCtaBrush()
     Box(
         modifier = Modifier
-            .then(if (selected) Modifier.redGlow(shape, elevation = 12.dp) else Modifier)
+            .size(44.dp)
             .clip(shape)
-            .background(bg)
-            .clickable(interactionSource = interaction, indication = null, onClick = onClick)
-            .padding(12.dp),
+            .clickable(interactionSource = interaction, indication = null, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(tab.icon, contentDescription = tab.label, tint = fg, modifier = Modifier.size(24.dp))
+        // Selected reads as an emitting violet disc: the brand gradient plus an 18dp glow.
+        // Unselected is a bare muted glyph — no container at all.
+        if (selected) {
+            Box(
+                Modifier
+                    .size(40.dp)
+                    .auraGlow(shape, elevation = 12.dp)
+                    .background(brush, shape)
+            )
+        }
+        Icon(
+            tab.icon,
+            contentDescription = tab.label,
+            tint = fg,
+            modifier = Modifier.size(if (selected) 20.dp else 22.dp),
+        )
     }
 }
 
@@ -239,6 +253,23 @@ fun AuraTabScaffold(
         )
         Box(Modifier.fillMaxSize()) {
             content(contentPadding)
+            // Content scrolls *through* the translucent pill, so the design fades the background
+            // up behind it — without this, tiles collide with the nav and the glass reads muddy.
+            Box(
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .height(130.dp)
+                    .background(
+                        Brush.verticalGradient(
+                            colorStops = arrayOf(
+                                0f to Color.Transparent,
+                                0.7f to MaterialTheme.colorScheme.background.copy(alpha = 0.9f),
+                                1f to MaterialTheme.colorScheme.background.copy(alpha = 0.9f),
+                            ),
+                        )
+                    )
+            )
             AuraBottomBar(
                 selected = selectedTab,
                 onSelect = onSelectTab,

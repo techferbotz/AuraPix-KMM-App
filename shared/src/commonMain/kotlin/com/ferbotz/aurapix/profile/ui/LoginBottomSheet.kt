@@ -1,14 +1,11 @@
 package com.ferbotz.aurapix.profile.ui
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.AccountCircle
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -26,7 +23,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.ferbotz.aurapix.core.auth.rememberGoogleAuthProvider
 import com.ferbotz.aurapix.core.di.DataModule
-import com.ferbotz.aurapix.core.ui.components.PrimaryButton
+import com.ferbotz.aurapix.core.ui.components.BrandLogo
 
 /**
  * Self-contained login gate: a modal sheet with Google sign-in. Reuses [LoginViewModel] + the
@@ -39,6 +36,8 @@ fun LoginBottomSheet(
     onDismiss: () -> Unit,
     onLoggedIn: () -> Unit,
     modifier: Modifier = Modifier,
+    onPrivacyPolicy: () -> Unit = {},
+    onTerms: () -> Unit = {},
 ) {
     val vm = remember { LoginViewModel(DataModule.authRepository, DataModule.userManager) }
     DisposableEffect(Unit) { onDispose { vm.onCleared() } }
@@ -53,46 +52,40 @@ fun LoginBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.surface,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         modifier = modifier,
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .navigationBarsPadding()
-                .padding(horizontal = 24.dp)
-                .padding(bottom = 24.dp),
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 28.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
+            // The mark, smaller than on the full screen — this interrupts the creation flow,
+            // so it should read as a pause, not as a second launch screen.
+            BrandLogo(size = 56.dp)
+            Spacer(Modifier.height(10.dp))
             Text(
-                "Sign in to continue",
-                style = MaterialTheme.typography.titleLarge,
+                "Sign in to generate",
+                style = MaterialTheme.typography.headlineSmall,
                 color = MaterialTheme.colorScheme.onSurface,
             )
+            Spacer(Modifier.height(6.dp))
             Text(
-                "Sign in to generate and save your creations.",
+                "Your photos and gems stay with your account.\nOne tap and you're back to creating.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
             )
-            Spacer(Modifier.height(8.dp))
-            PrimaryButton(
-                text = "Continue with Google",
+            Spacer(Modifier.height(18.dp))
+            GoogleSignInButton(
                 onClick = { vm.signIn { googleAuth.signIn() } },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = loginState !is LoginUiState.Loading,
                 loading = loginState is LoginUiState.Loading,
-                leadingIcon = Icons.Rounded.AccountCircle,
             )
-            (loginState as? LoginUiState.Error)?.let { error ->
-                Text(
-                    error.message,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
-                    textAlign = TextAlign.Center,
-                )
-            }
+            LoginErrorSlot((loginState as? LoginUiState.Error)?.message)
+            LegalFooter(onPrivacyPolicy = onPrivacyPolicy, onTerms = onTerms)
         }
     }
 }

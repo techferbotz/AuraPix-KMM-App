@@ -19,6 +19,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import com.ferbotz.aurapix.core.ui.theme.AuraTheme
 
 /** Selectable filter pill (Portrait / Anime / All Creations …). One style, everywhere. */
 @Composable
@@ -42,13 +43,55 @@ fun CategoryChip(
     )
 }
 
-/** Small label badge (PREMIUM, BEST VALUE, category tags, status). */
+/**
+ * Read-only tag pill — the category chips on Template Detail and the recent-search chips.
+ * Not selectable; `surfaceContainerHigh` fill with secondary-text labels.
+ */
+@Composable
+fun ReadOnlyChip(
+    text: String,
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
+    leadingIcon: ImageVector? = null,
+) {
+    Row(
+        modifier = modifier
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .padding(horizontal = 16.dp, vertical = 9.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        leadingIcon?.let {
+            Icon(
+                it,
+                contentDescription = null,
+                tint = AuraTheme.colors.muted,
+                modifier = Modifier.size(14.dp),
+            )
+        }
+        Text(
+            text,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+/**
+ * Small label badge (TRENDING, BEST VALUE, PREMIUM, category tags).
+ *
+ * Defaults to the deep-violet badge fill `#4426B8` on `#E4D7FD` — a dedicated pair, distinct from
+ * both the primary CTA violet and the surface ladder, so badges read as metadata rather than as
+ * something tappable.
+ */
 @Composable
 fun StatusBadge(
     text: String,
     modifier: Modifier = Modifier,
-    containerColor: Color = MaterialTheme.colorScheme.primaryContainer,
-    contentColor: Color = MaterialTheme.colorScheme.onPrimaryContainer,
+    containerColor: Color = AuraTheme.colors.badge,
+    contentColor: Color = AuraTheme.colors.onBadge,
     icon: ImageVector? = null,
 ) {
     Row(

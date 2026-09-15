@@ -76,10 +76,10 @@ fun ProcessingScreen(
                 Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                StageRow(Icons.Rounded.CloudUpload, "Uploading photos", StageState.Done)
-                StageRow(Icons.Rounded.Tune, "Preparing AI model", StageState.Active)
-                StageRow(Icons.Rounded.AutoAwesome, "Generating image", StageState.Pending)
-                StageRow(Icons.Rounded.Brush, "Finalizing artwork", StageState.Pending)
+                StageRow("Uploading photos", StageState.Done, icon = Icons.Rounded.CloudUpload)
+                StageRow("Preparing AI model", StageState.Active, icon = Icons.Rounded.Tune)
+                StageRow("Generating image", StageState.Pending, icon = Icons.Rounded.AutoAwesome)
+                StageRow("Finalizing artwork", StageState.Pending, icon = Icons.Rounded.Brush)
             }
 
             GlassCard(Modifier.fillMaxWidth()) {

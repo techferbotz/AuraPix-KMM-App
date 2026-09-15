@@ -41,7 +41,7 @@ import com.ferbotz.aurapix.core.ui.components.StatusBadge
 import com.ferbotz.aurapix.core.ui.theme.AuraPixTheme
 import com.ferbotz.aurapix.core.ui.theme.AuraShapes
 import com.ferbotz.aurapix.core.ui.theme.AuraTheme
-import com.ferbotz.aurapix.core.ui.theme.redGlow
+import com.ferbotz.aurapix.core.ui.theme.auraGlow
 
 /**
  * Out-of-gems paywall. Renders the RevenueCat offering's [packages] (real localized prices),
@@ -119,7 +119,7 @@ private fun PaywallSheetContent(
         ) {
             Box(
                 Modifier.size(64.dp)
-                    .redGlow(CircleShape, elevation = 22.dp, color = MaterialTheme.colorScheme.primary)
+                    .auraGlow(CircleShape, elevation = 22.dp, color = MaterialTheme.colorScheme.primary)
                     .clip(CircleShape)
                     .background(AuraTheme.colors.glassSurface)
                     .border(1.dp, MaterialTheme.colorScheme.primary, CircleShape),
@@ -225,7 +225,7 @@ private fun PackageRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .then(if (selected) Modifier.redGlow(shape, elevation = 16.dp, color = accent) else Modifier)
+            .then(if (selected) Modifier.auraGlow(shape, elevation = 16.dp, color = accent) else Modifier)
             .clip(shape)
             .background(if (selected) MaterialTheme.colorScheme.surfaceContainer else AuraTheme.colors.glassSurface)
             .border(if (selected) 2.dp else 1.dp, if (selected) accent else AuraTheme.colors.glassBorder, shape)

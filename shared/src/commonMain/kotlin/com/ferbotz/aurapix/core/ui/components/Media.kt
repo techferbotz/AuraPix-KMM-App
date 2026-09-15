@@ -106,10 +106,14 @@ fun Avatar(
     }
 }
 
-/** Draws a bottom-up dark gradient over content so overlaid text stays legible on imagery. */
+/**
+ * Draws a bottom-up dark gradient over content so overlaid text stays legible on imagery.
+ * Every image in the app that carries text gets one — the fade starts at 45% height and lands
+ * on black at 75%, which is the ramp the design uses on feed tiles, hero cards and grids.
+ */
 fun Modifier.verticalScrim(
     color: Color = Color.Black.copy(alpha = 0.75f),
-    startFraction: Float = 0.35f,
+    startFraction: Float = 0.45f,
 ): Modifier = drawWithContent {
     drawContent()
     drawRect(

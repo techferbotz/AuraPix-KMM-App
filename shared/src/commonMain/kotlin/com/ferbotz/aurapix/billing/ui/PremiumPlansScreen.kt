@@ -34,7 +34,7 @@ import com.ferbotz.aurapix.core.ui.components.AuraTopBar
 import com.ferbotz.aurapix.core.ui.components.PricingCard
 import com.ferbotz.aurapix.core.ui.theme.AuraPixTheme
 import com.ferbotz.aurapix.core.ui.theme.AuraTheme
-import com.ferbotz.aurapix.core.ui.theme.redGlow
+import com.ferbotz.aurapix.core.ui.theme.auraGlow
 
 /** The single Premium subscription: removes ads and grants 100 gems every month. Gold-accented. */
 @Composable
@@ -77,7 +77,7 @@ fun PremiumPlansScreen(
                 ) {
                     Box(
                         Modifier.size(96.dp)
-                            .redGlow(CircleShape, elevation = 26.dp, color = gold)
+                            .auraGlow(CircleShape, elevation = 26.dp, color = gold)
                             .clip(CircleShape)
                             .background(AuraTheme.colors.glassSurface)
                             .border(1.dp, gold, CircleShape),

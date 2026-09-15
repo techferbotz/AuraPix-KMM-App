@@ -35,7 +35,7 @@ import com.ferbotz.aurapix.core.ui.components.StatusBadge
 import com.ferbotz.aurapix.core.ui.theme.AuraPixTheme
 import com.ferbotz.aurapix.core.ui.theme.AuraShapes
 import com.ferbotz.aurapix.core.ui.theme.AuraTheme
-import com.ferbotz.aurapix.core.ui.theme.redGlow
+import com.ferbotz.aurapix.core.ui.theme.auraGlow
 
 /** Gem packs from the live RevenueCat offering: the best-value pack is featured, the rest in a grid. */
 @Composable
@@ -139,7 +139,7 @@ private fun GemPackCard(
     val shape = AuraShapes.large
     val accent = MaterialTheme.colorScheme.primary
     val surface = modifier
-        .then(if (featured) Modifier.redGlow(shape, elevation = 20.dp, color = accent) else Modifier)
+        .then(if (featured) Modifier.auraGlow(shape, elevation = 20.dp, color = accent) else Modifier)
         .clip(shape)
         .background(if (featured) MaterialTheme.colorScheme.surfaceContainer else AuraTheme.colors.glassSurface)
         .border(if (featured) 2.dp else 1.dp, if (featured) accent else AuraTheme.colors.glassBorder, shape)

@@ -8,6 +8,7 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
@@ -41,11 +42,16 @@ fun AuraPixTheme(content: @Composable () -> Unit) {
 }
 
 /**
- * Brand "red glow" drop shadow used on primary CTAs and highlighted cards.
+ * The app's signature violet glow — a colored drop shadow behind primary CTAs, the selected
+ * nav icon and highlighted cards. It should read as light emission, not as a drop shadow.
+ *
  * Colored shadows render on Android (API 28+); on other targets the elevation still
  * produces a soft shadow. Apply before clipping/background so the glow bleeds outward.
+ *
+ * Elevations in use: 12dp selected nav icon · 16dp buttons · 20dp cards · 24dp highlighted
+ * pricing card.
  */
-fun Modifier.redGlow(
+fun Modifier.auraGlow(
     shape: Shape = CircleShape,
     elevation: Dp = 18.dp,
     color: Color = AuraExtendedDark.glow,
@@ -55,4 +61,24 @@ fun Modifier.redGlow(
     clip = false,
     ambientColor = color,
     spotColor = color,
+)
+
+/**
+ * The brand CTA gradient (`#5533E0 → #7D52F4`), drawn on the 135° diagonal like the design.
+ * Used on primary buttons, the selected nav pill and the "Try this" hero CTA — the logo's own
+ * ramp rather than a flat violet fill.
+ */
+@Composable
+@ReadOnlyComposable
+fun auraCtaBrush(): Brush = Brush.linearGradient(
+    colors = listOf(AuraTheme.colors.gradientStart, AuraTheme.colors.gradientEnd),
+)
+
+/**
+ * The lighter sweep (`#5533E0 → #A57EFC`) used for the Processing screen's progress arc.
+ */
+@Composable
+@ReadOnlyComposable
+fun auraSweepBrush(): Brush = Brush.linearGradient(
+    colors = listOf(AuraTheme.colors.gradientStart, AuraTheme.colors.gradientSweepEnd),
 )

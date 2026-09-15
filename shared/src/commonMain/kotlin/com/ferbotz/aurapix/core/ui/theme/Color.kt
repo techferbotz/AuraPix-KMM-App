@@ -13,77 +13,97 @@ import androidx.compose.ui.graphics.Color
  *  - [AuraExtendedColors]    : the extra, non-Material tokens (glass, glow, badges, scrim).
  *
  * To re-theme the whole app, edit the values here — nothing else needs to change.
- * Palette: AuraPix Design System v1 (purple brand on a zinc-dark surface ladder).
+ *
+ * Palette: AuraPix Design System v2 — **violet, derived from the app logo**, on a
+ * violet-cast near-black surface ladder. Dark theme only; there is no light mode.
  */
 
 // ---------------------------------------------------------------------------
-// Raw palette (AuraPix design tokens — purple / zinc, Material 3 dark)
+// Brand violet — taken from the logo vector, do not re-hue
 // ---------------------------------------------------------------------------
-private val Purple          = Color(0xFF8B5CF6) // brand accent / primary button
-private val PurpleSecondary = Color(0xFFA855F7) // secondary purple
-private val PurpleLight     = Color(0xFFC084FC) // light purple accent
-private val PurpleDeep      = Color(0xFF6D28D9) // deep purple
-private val Violet          = Color(0xFF4C1D95) // dark violet
-private val PurplePressed   = Color(0xFF7C3AED) // primary button pressed
+private val Violet        = Color(0xFF9267FA) // core brand violet — the logo's sparkle shapes
+private val VioletBright  = Color(0xFFA57EFC) // emphasis / progress-ring gradient end
+private val VioletPressed = Color(0xFF7D52F4) // pressed state, CTA gradient end
+private val VioletDeep    = Color(0xFF5533E0) // deepest logo stop, CTA gradient start
+private val VioletSoft    = Color(0xFFC8ADFD) // violet-tinted text & icons on dark
+private val OnViolet      = Color(0xFFF0ECFD) // the logo plate color — text on violet fills
 
-private val Bg              = Color(0xFF09090B) // primary background / navigation bar
-private val BgSecondary     = Color(0xFF18181B) // secondary background
-private val Surface         = Color(0xFF1F1F23) // surface / inputs
-private val Elevated        = Color(0xFF27272A) // elevated surface
-private val CardBg          = Color(0xFF2A2A2F) // card background / divider
-private val Zinc700         = Color(0xFF3F3F46) // border / bright surface
+private val BadgeViolet   = Color(0xFF4426B8) // "TRENDING" / category badge fill
+private val OnBadge       = Color(0xFFE4D7FD) // text on [BadgeViolet]
 
-private val White           = Color(0xFFFFFFFF) // primary text / icon
-private val TextSecondary   = Color(0xFFA1A1AA) // secondary text / muted icons
+// ---------------------------------------------------------------------------
+// Violet-cast dark surface ladder
+// ---------------------------------------------------------------------------
+private val Bg            = Color(0xFF0B0912) // app background
+private val SurfLowest    = Color(0xFF08060E) // splash / result — the darkest ground
+private val SurfLow       = Color(0xFF120F1C) // sheets, inert placeholders
+private val SurfContainer = Color(0xFF181423) // inputs, search field, skeleton base
+private val SurfHigh      = Color(0xFF211B30) // chips, credits badge, disabled CTA
+private val SurfHighest   = Color(0xFF29223C) // progress-ring track
+private val SurfBright    = Color(0xFF332B49) // brightest elevated fill
 
-private val ErrorRed        = Color(0xFFEF4444) // error / danger button
-private val ErrContainer    = Color(0xFF7F1D1D) // error container
-private val OnErrContainer  = Color(0xFFFECACA) // text on error container
+private val OnSurface     = Color(0xFFEDEAF6) // primary text
+private val OnSurfaceVar  = Color(0xFFA79EC2) // secondary text (violet-tinted grey)
+private val Muted         = Color(0xFF6F6590) // disabled labels, unselected nav, placeholders
 
-private val Success         = Color(0xFF22C55E)
-private val Warning         = Color(0xFFF59E0B)
+private val Outline       = Color(0xFF4A4066) // dashed slot borders, inactive pager dots
+private val OutlineVar    = Color(0xFF2C2542) // hairline borders
+private val Divider       = Color(0xFF17121F) // list-row separators
 
-private val PremiumGold      = Color(0xFFF5C563) // premium (subscription) accent — borders/icons/glow/CTA
-private val OnPremiumGold    = Color(0xFF3A2606) // text/icon drawn on the gold CTA
+private val Shimmer       = Color(0xFF241D36) // skeleton highlight sweeping over [SurfContainer]
+
+// ---------------------------------------------------------------------------
+// Semantic accents — each owns exactly one job (see the brief's §2.5 hierarchy)
+// ---------------------------------------------------------------------------
+private val ErrorRed      = Color(0xFFFF5A5F) // destructive & failure ONLY, never decorative
+private val OnError       = Color(0xFF450A0A)
+private val ErrContainer  = Color(0xFF7F1D1D)
+private val OnErrContainer= Color(0xFFFECACA)
+
+private val Success       = Color(0xFF22C55E) // "Looks great", completed stages
+private val Warning       = Color(0xFFF59E0B)
+
+private val PremiumGold   = Color(0xFFF5C563) // Premium SUBSCRIPTION only — never gems
+private val OnPremiumGold = Color(0xFF3A2606)
 
 // ---------------------------------------------------------------------------
 // Material 3 color scheme  (drives every M3 component in the app)
 // ---------------------------------------------------------------------------
 val AuraDarkColorScheme: ColorScheme = darkColorScheme(
-    primary = Purple,
-    onPrimary = White,
-    primaryContainer = Purple,
-    onPrimaryContainer = White,
-    inversePrimary = PurplePressed,
-    secondary = PurpleSecondary,
-    onSecondary = White,
-    secondaryContainer = PurpleDeep,
-    onSecondaryContainer = White,
-    tertiary = PurpleLight,
-    onTertiary = Violet,
-    tertiaryContainer = Violet,
-    onTertiaryContainer = PurpleLight,
+    primary = Violet,
+    onPrimary = OnViolet,
+    primaryContainer = VioletDeep,
+    onPrimaryContainer = OnViolet,
+    inversePrimary = VioletPressed,
+    secondary = VioletSoft,
+    onSecondary = SurfLow,
+    secondaryContainer = SurfHigh,
+    onSecondaryContainer = VioletSoft,
+    tertiary = VioletBright,
+    onTertiary = SurfLow,
+    tertiaryContainer = BadgeViolet,
+    onTertiaryContainer = OnBadge,
     background = Bg,
-    onBackground = White,
+    onBackground = OnSurface,
     surface = Bg,
-    onSurface = White,
-    surfaceVariant = Elevated,
-    onSurfaceVariant = TextSecondary,
-    surfaceDim = Bg,
-    surfaceBright = Zinc700,
-    surfaceContainerLowest = Bg,
-    surfaceContainerLow = BgSecondary,
-    surfaceContainer = Surface,
-    surfaceContainerHigh = Elevated,
-    surfaceContainerHighest = CardBg,
+    onSurface = OnSurface,
+    surfaceVariant = SurfHigh,
+    onSurfaceVariant = OnSurfaceVar,
+    surfaceDim = SurfLowest,
+    surfaceBright = SurfBright,
+    surfaceContainerLowest = SurfLowest,
+    surfaceContainerLow = SurfLow,
+    surfaceContainer = SurfContainer,
+    surfaceContainerHigh = SurfHigh,
+    surfaceContainerHighest = SurfHighest,
     error = ErrorRed,
-    onError = White,
+    onError = OnError,
     errorContainer = ErrContainer,
     onErrorContainer = OnErrContainer,
-    outline = Zinc700,
-    outlineVariant = CardBg,
+    outline = Outline,
+    outlineVariant = OutlineVar,
     scrim = Color(0xFF000000),
-    inverseSurface = White,
+    inverseSurface = OnSurface,
     inverseOnSurface = Bg,
 )
 
@@ -99,34 +119,55 @@ data class AuraExtendedColors(
     /** Fill for the floating bottom nav — more opaque than [glassSurface] so it reads solid while
      *  content still shows through the side margins. */
     val navSurface: Color,
-    /** Brand purple used for glow/shadow accents. */
+    /** Brand violet used for glow/shadow accents. */
     val glow: Color,
-    /** Small category/status badge background (deep purple). */
+    /** Small category/status badge background (deep violet). */
     val badge: Color,
+    /** Foreground for content drawn on [badge]. */
+    val onBadge: Color,
     /** Dark scrim laid over imagery so text stays legible. */
     val scrim: Color,
     /** Foreground color for content drawn on top of imagery. */
     val onImage: Color,
+    /** Dimmed foreground: disabled CTA labels, unselected nav icons, input placeholders. */
+    val muted: Color,
+    /** Hairline separator between list rows. */
+    val divider: Color,
+    /** Highlight that sweeps across [ColorScheme.surfaceContainer] in loading skeletons. */
+    val shimmer: Color,
     /** Positive / "good example" accent. */
     val success: Color,
     /** Caution accent. */
     val warning: Color,
-    /** Premium (subscription) accent — gold, to set membership apart from purple gem purchases. */
+    /** Premium (subscription) accent — gold, to set membership apart from violet gem purchases. */
     val premium: Color,
     /** Foreground color for content drawn on top of the gold [premium] fill. */
     val onPremium: Color,
+    /** Start stop of the brand CTA gradient (logo G5 family). */
+    val gradientStart: Color,
+    /** End stop of the brand CTA gradient. */
+    val gradientEnd: Color,
+    /** End stop of the lighter sweep used on the progress ring. */
+    val gradientSweepEnd: Color,
 )
 
 val AuraExtendedDark = AuraExtendedColors(
-    glassSurface = Color(0x9918181B), // rgba(24, 24, 27, 0.60)
+    glassSurface = Color(0x99131020), // rgba(19, 16, 32, 0.60)
     glassBorder = Color(0x14FFFFFF),  // white @ 8%
-    navSurface = Color(0xE618181B),   // rgba(24, 24, 27, 0.90) — floating nav, less see-through
-    glow = Purple,
-    badge = PurpleDeep,
+    navSurface = Color(0xE6131020),   // rgba(19, 16, 32, 0.90) — floating nav, less see-through
+    glow = Violet,
+    badge = BadgeViolet,
+    onBadge = OnBadge,
     scrim = Color(0xCC000000),
-    onImage = Color(0xFFFFFFFF),
+    onImage = OnSurface,
+    muted = Muted,
+    divider = Divider,
+    shimmer = Shimmer,
     success = Success,
     warning = Warning,
     premium = PremiumGold,
     onPremium = OnPremiumGold,
+    gradientStart = VioletDeep,       // #5533E0
+    gradientEnd = VioletPressed,      // #7D52F4
+    gradientSweepEnd = VioletBright,  // #A57EFC
 )

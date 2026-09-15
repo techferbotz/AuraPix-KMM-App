@@ -27,7 +27,7 @@ import com.ferbotz.aurapix.core.ui.components.GlassCard
 import com.ferbotz.aurapix.core.ui.components.PrimaryButton
 import com.ferbotz.aurapix.core.ui.components.SecondaryButton
 import com.ferbotz.aurapix.core.ui.theme.AuraPixTheme
-import com.ferbotz.aurapix.core.ui.theme.redGlow
+import com.ferbotz.aurapix.core.ui.theme.auraGlow
 
 /** Confirmation shown after a successful credit purchase. */
 @Composable
@@ -49,7 +49,7 @@ fun CreditsSuccessScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Box(
-                Modifier.size(104.dp).redGlow(CircleShape, elevation = 28.dp).clip(CircleShape)
+                Modifier.size(104.dp).auraGlow(CircleShape, elevation = 28.dp).clip(CircleShape)
                     .background(MaterialTheme.colorScheme.primaryContainer),
                 contentAlignment = Alignment.Center,
             ) {
