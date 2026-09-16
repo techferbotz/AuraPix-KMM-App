@@ -1,23 +1,16 @@
 package com.ferbotz.aurapix.core.ui.components
 
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -29,21 +22,19 @@ import androidx.compose.material.icons.rounded.PhotoLibrary
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.ferbotz.aurapix.core.ui.theme.AuraTheme
-import com.ferbotz.aurapix.core.ui.theme.auraCtaBrush
-import com.ferbotz.aurapix.core.ui.theme.auraGlow
 
 /** Pill showing the user's remaining credits. Used in every top bar that needs it. */
 @Composable
@@ -143,14 +134,21 @@ fun AuraTopBar(
  *  those are dropped here.) */
 enum class AuraTab(val label: String, val icon: ImageVector) {
     Feed("Feed", Icons.Rounded.GridView),
-    MyCreations("My Creations", Icons.Rounded.PhotoLibrary),
+    MyCreations("Creations", Icons.Rounded.PhotoLibrary),
     Profile("Profile", Icons.Rounded.Person),
 }
 
 /**
- * Floating bottom navigation used by Feed / My Creations / Profile. A translucent glass pill that
- * hovers above the system nav inset; the selected tab is marked by a glowing purple circle around
- * its icon. Icon-only — no labels. Replaces the flat Material NavigationBar.
+ * Bottom navigation for Feed / My Creations / Profile.
+ *
+ * A standard Material 3 [NavigationBar] — anchored, opaque, icon **and** label, with the usual
+ * pill indicator behind the selected icon. The brand shows up only in the indicator's violet;
+ * everything else is stock M3 behaviour, sizing and motion.
+ *
+ * (This replaces an earlier floating glass pill taken from the design canvas. The canvas specifies
+ * a 3-tab icon-only floating bar; we deliberately diverge — a standard bar is more legible, labels
+ * remove the guess-the-icon problem, and it doesn't need the content-fade hack that a bar floating
+ * over a scrolling grid required.)
  */
 @Composable
 fun AuraBottomBar(
@@ -158,79 +156,37 @@ fun AuraBottomBar(
     onSelect: (AuraTab) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .navigationBarsPadding()
-            .padding(horizontal = 24.dp, vertical = 12.dp),
+    NavigationBar(
+        modifier = modifier,
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        contentColor = MaterialTheme.colorScheme.onSurface,
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(52.dp)
-                .background(AuraTheme.colors.navSurface, CircleShape)
-                .border(1.dp, AuraTheme.colors.glassBorder, CircleShape)
-                .padding(horizontal = 10.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            AuraTab.entries.forEach { tab ->
-                NavItem(tab = tab, selected = selected == tab, onClick = { onSelect(tab) })
-            }
-        }
-    }
-}
-
-@Composable
-private fun NavItem(
-    tab: AuraTab,
-    selected: Boolean,
-    onClick: () -> Unit,
-) {
-    // 220ms, per the design's transition note.
-    val fg by animateColorAsState(
-        if (selected) MaterialTheme.colorScheme.onPrimary else AuraTheme.colors.muted,
-        animationSpec = tween(220),
-        label = "navItemFg",
-    )
-    val shape = CircleShape
-    val interaction = remember { MutableInteractionSource() }
-    val brush = auraCtaBrush()
-    Box(
-        modifier = Modifier
-            .size(44.dp)
-            .clip(shape)
-            .clickable(interactionSource = interaction, indication = null, onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
-        // Selected reads as an emitting violet disc: the brand gradient plus an 18dp glow.
-        // Unselected is a bare muted glyph — no container at all.
-        if (selected) {
-            Box(
-                Modifier
-                    .size(40.dp)
-                    .auraGlow(shape, elevation = 12.dp)
-                    .background(brush, shape)
+        AuraTab.entries.forEach { tab ->
+            NavigationBarItem(
+                selected = selected == tab,
+                onClick = { onSelect(tab) },
+                icon = { Icon(tab.icon, contentDescription = tab.label, modifier = Modifier.size(24.dp)) },
+                label = { Text(tab.label, style = MaterialTheme.typography.labelMedium) },
+                alwaysShowLabel = true,
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    selectedTextColor = MaterialTheme.colorScheme.onSurface,
+                    indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                ),
             )
         }
-        Icon(
-            tab.icon,
-            contentDescription = tab.label,
-            tint = fg,
-            modifier = Modifier.size(if (selected) 20.dp else 22.dp),
-        )
     }
 }
 
-/** The vertical space the floating [AuraBottomBar] occupies (above the system nav inset). */
-private val BottomBarHeight = 96.dp
-
 /**
- * Container for the three tab screens. Unlike a plain [Scaffold] with a `bottomBar`, the
- * [AuraBottomBar] floats *over* the content, so the feed/gallery scrolls through behind the
- * translucent bar (no opaque strip). The [content] gets a [PaddingValues] carrying the top-bar
- * height and a bottom inset that clears the floating bar — apply the bottom to your scrollable's
- * `contentPadding` (not as a hard bottom padding on the container) so the last items scroll past it.
+ * Container for the three tab screens: a [Scaffold] with [AuraBottomBar] in the `bottomBar` slot,
+ * so the bar is anchored and the content sits above it rather than scrolling underneath.
+ *
+ * [content] receives the scaffold's own [PaddingValues]. The bottom value already covers the nav
+ * bar and the system inset — pass it to your scrollable's `contentPadding` so the last row clears
+ * the bar.
  */
 @Composable
 fun AuraTabScaffold(
@@ -244,37 +200,9 @@ fun AuraTabScaffold(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.background,
         topBar = topBar,
+        bottomBar = { AuraBottomBar(selected = selectedTab, onSelect = onSelectTab) },
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
     ) { innerPadding ->
-        val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-        val contentPadding = PaddingValues(
-            top = innerPadding.calculateTopPadding(),
-            bottom = navBottom + BottomBarHeight,
-        )
-        Box(Modifier.fillMaxSize()) {
-            content(contentPadding)
-            // Content scrolls *through* the translucent pill, so the design fades the background
-            // up behind it — without this, tiles collide with the nav and the glass reads muddy.
-            Box(
-                Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .height(130.dp)
-                    .background(
-                        Brush.verticalGradient(
-                            colorStops = arrayOf(
-                                0f to Color.Transparent,
-                                0.7f to MaterialTheme.colorScheme.background.copy(alpha = 0.9f),
-                                1f to MaterialTheme.colorScheme.background.copy(alpha = 0.9f),
-                            ),
-                        )
-                    )
-            )
-            AuraBottomBar(
-                selected = selectedTab,
-                onSelect = onSelectTab,
-                modifier = Modifier.align(Alignment.BottomCenter),
-            )
-        }
+        content(innerPadding)
     }
 }

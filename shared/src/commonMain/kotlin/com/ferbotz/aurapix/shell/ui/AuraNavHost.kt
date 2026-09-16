@@ -12,6 +12,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavDestination.Companion.hasRoute
@@ -364,9 +366,19 @@ fun AuraNavHost(
     }
 }
 
+/** Persists the selected tab by name — enum values aren't saveable out of the box, and a
+ *  name is stable across reorderings of [AuraTab] in a way an ordinal isn't. */
+private val AuraTabSaver: Saver<AuraTab, String> = Saver(
+    save = { it.name },
+    restore = { AuraTab.valueOf(it) },
+)
+
 @Composable
 private fun HomeContainer(navController: NavHostController, auth: AuthState) {
-    var tab by remember { mutableStateOf(AuraTab.Feed) }
+    // rememberSaveable, not remember: NavHost disposes HomeRoute's content while a pushed
+    // screen is on top, so a plain remember drops the selection and Home always came back
+    // on Feed. Saveable state is held by the back stack entry and restored on pop.
+    var tab by rememberSaveable(stateSaver = AuraTabSaver) { mutableStateOf(AuraTab.Feed) }
     // Single source of truth for user data (credits, avatar) — observed once, shown on every tab.
     val user = currentUserState()
 
