@@ -1,5 +1,6 @@
 package com.ferbotz.aurapix.creation.data
 
+import com.ferbotz.aurapix.core.config.DEFAULT_PAGE_LIMIT
 import com.ferbotz.aurapix.core.data.remote.dto.PagedResponse
 import com.ferbotz.aurapix.core.data.remote.safeApiCall
 import com.ferbotz.aurapix.creation.data.dto.CreationDetailDto
@@ -35,7 +36,7 @@ class CreationRemoteDataSource(private val client: HttpClient) {
         }
 
     /** §4.11 — paginated creation history (newest first). */
-    suspend fun getCreations(page: Int = 1, limit: Int = 20): Result<PagedResponse<CreationDto>> =
+    suspend fun getCreations(page: Int = 1, limit: Int = DEFAULT_PAGE_LIMIT): Result<PagedResponse<CreationDto>> =
         safeApiCall { client.get("creations") { parameter("page", page); parameter("limit", limit) } }
 
     /**

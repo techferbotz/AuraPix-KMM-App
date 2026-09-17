@@ -34,6 +34,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import com.ferbotz.aurapix.core.config.LocalRemoteConfig
 import com.ferbotz.aurapix.core.ui.theme.AuraTheme
 
 /** Pill showing the user's remaining credits. Used in every top bar that needs it. */
@@ -161,7 +162,8 @@ fun AuraBottomBar(
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
         contentColor = MaterialTheme.colorScheme.onSurface,
     ) {
-        AuraTab.entries.forEach { tab ->
+        val features = LocalRemoteConfig.current.features
+        AuraTab.entries.filter { it != AuraTab.MyCreations || features.creations }.forEach { tab ->
             NavigationBarItem(
                 selected = selected == tab,
                 onClick = { onSelect(tab) },

@@ -1,6 +1,8 @@
 package com.ferbotz.aurapix.core.data.prefs
 
 import com.russhwolf.settings.Settings
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 /**
  * Typed wrapper around [Settings] (multiplatform-settings) for lightweight key-value
@@ -51,7 +53,40 @@ class AppPreferences(private val settings: Settings) {
 
     val isLoggedIn: Boolean get() = authToken != null
 
-    /** Clears the whole signed-in session (token + cached user/credits/subscription); keeps theme/onboarding. */
+    // -- Per-install identity + remote config cache ---------------------------
+    // Both are per INSTALL, not per session: [clearSession] deliberately leaves them alone, so
+    // signing out can't throw away a kill switch or move this install into a different
+    // experiment arm.
+
+    /**
+     * Stable per-install id, sent as `X-Device-Id` on every request. It is the key the backend
+     * buckets an install into an experiment arm with, so it is generated and persisted on
+     * **first access** — even the very first request of a fresh install carries one.
+     */
+    @OptIn(ExperimentalUuidApi::class)
+    val deviceId: String
+        get() = settings.getStringOrNull(KEY_DEVICE_ID) ?: Uuid.random().toString().also {
+            settings.putString(KEY_DEVICE_ID, it)
+        }
+
+    /** The last good `GET /config` payload, as JSON, or null before the first successful fetch. */
+    val remoteConfigJson: String?
+        get() = settings.getStringOrNull(KEY_REMOTE_CONFIG)
+
+    /** Epoch millis of the fetch that produced [remoteConfigJson], or null if never fetched. */
+    val remoteConfigFetchedAt: Long?
+        get() = settings.getLongOrNull(KEY_REMOTE_CONFIG_AT)
+
+    fun cacheRemoteConfig(json: String, fetchedAtEpochMillis: Long) {
+        settings.putString(KEY_REMOTE_CONFIG, json)
+        settings.putLong(KEY_REMOTE_CONFIG_AT, fetchedAtEpochMillis)
+    }
+
+    /**
+     * Clears the whole signed-in session (token + cached user/credits/subscription); keeps
+     * theme/onboarding, and deliberately keeps [deviceId] and the remote config cache, which
+     * belong to the install rather than the session.
+     */
     fun clearSession() {
         authToken = null
         userId = null
@@ -74,6 +109,9 @@ class AppPreferences(private val settings: Settings) {
         const val KEY_CREDITS = "cached_credits"
         const val KEY_SUBSCRIPTION = "subscription_status"
         const val KEY_THEME = "theme_mode"
+        const val KEY_DEVICE_ID = "device_id"
+        const val KEY_REMOTE_CONFIG = "remote_config"
+        const val KEY_REMOTE_CONFIG_AT = "remote_config_fetched_at"
         const val DEFAULT_THEME = "system"
         const val DEFAULT_SUBSCRIPTION = "NONE"
     }

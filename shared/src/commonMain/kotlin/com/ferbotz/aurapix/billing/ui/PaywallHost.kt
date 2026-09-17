@@ -9,6 +9,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import com.ferbotz.aurapix.billing.data.PurchaseCancelledException
 import com.ferbotz.aurapix.billing.data.RcPackage
+import com.ferbotz.aurapix.core.config.LocalRemoteConfig
 import com.ferbotz.aurapix.core.config.MonetizationConfig
 import com.ferbotz.aurapix.core.di.DataModule
 import kotlinx.coroutines.launch
@@ -52,7 +53,7 @@ fun PaywallHost(
         loading = loading,
         purchasingProductId = purchasingProductId,
         errorMessage = error,
-        generationCostGems = config.generationCostGems,
+        generationCostGems = LocalRemoteConfig.current.generation.creditCost,
         gemsForProduct = { gemsByProduct[it] },
         highlightForProduct = { highlightByProduct[it] == true },
         onRetry = { reloadTick++ },

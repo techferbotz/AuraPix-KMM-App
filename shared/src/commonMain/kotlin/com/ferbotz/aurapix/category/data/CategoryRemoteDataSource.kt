@@ -1,5 +1,6 @@
 package com.ferbotz.aurapix.category.data
 
+import com.ferbotz.aurapix.core.config.DEFAULT_PAGE_LIMIT
 import com.ferbotz.aurapix.core.data.remote.dto.CategorySummaryDto
 import com.ferbotz.aurapix.core.data.remote.dto.PagedResponse
 import com.ferbotz.aurapix.core.data.remote.dto.TemplateSummaryDto
@@ -19,6 +20,6 @@ class CategoryRemoteDataSource(private val client: HttpClient) {
         safeApiCall { client.get("categories/$categoryId") }
 
     /** §4.8 — paginated templates within a category. */
-    suspend fun getCategoryTemplates(categoryId: String, page: Int = 1, limit: Int = 20): Result<PagedResponse<TemplateSummaryDto>> =
+    suspend fun getCategoryTemplates(categoryId: String, page: Int = 1, limit: Int = DEFAULT_PAGE_LIMIT): Result<PagedResponse<TemplateSummaryDto>> =
         safeApiCall { client.get("categories/$categoryId/templates") { parameter("page", page); parameter("limit", limit) } }
 }

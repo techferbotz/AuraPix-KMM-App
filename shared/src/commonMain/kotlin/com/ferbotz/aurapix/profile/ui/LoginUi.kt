@@ -24,6 +24,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.unit.dp
+import com.ferbotz.aurapix.core.config.LocalRemoteConfig
 import com.ferbotz.aurapix.core.ui.components.PrimaryButton
 import com.ferbotz.aurapix.core.ui.theme.AuraTheme
 
@@ -60,6 +61,8 @@ fun GoogleSignInButton(
     modifier: Modifier = Modifier,
     loading: Boolean = false,
 ) {
+    // Kill switch: hides sign-in everywhere at once. The auth route itself stays up.
+    if (!LocalRemoteConfig.current.features.googleLogin) return
     PrimaryButton(
         text = "Continue with Google",
         onClick = onClick,

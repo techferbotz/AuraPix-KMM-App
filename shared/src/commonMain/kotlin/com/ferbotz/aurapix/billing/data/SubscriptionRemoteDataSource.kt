@@ -2,6 +2,7 @@ package com.ferbotz.aurapix.billing.data
 
 import com.ferbotz.aurapix.billing.data.dto.PurchaseDto
 import com.ferbotz.aurapix.billing.data.dto.SubscriptionDetailDto
+import com.ferbotz.aurapix.core.config.DEFAULT_PAGE_LIMIT
 import com.ferbotz.aurapix.core.data.remote.dto.PagedResponse
 import com.ferbotz.aurapix.core.data.remote.safeApiCall
 import io.ktor.client.HttpClient
@@ -15,6 +16,6 @@ class SubscriptionRemoteDataSource(private val client: HttpClient) {
         safeApiCall { client.get("subscriptions") }
 
     /** §4.14 — paginated purchase history. */
-    suspend fun getPurchases(page: Int = 1, limit: Int = 20): Result<PagedResponse<PurchaseDto>> =
+    suspend fun getPurchases(page: Int = 1, limit: Int = DEFAULT_PAGE_LIMIT): Result<PagedResponse<PurchaseDto>> =
         safeApiCall { client.get("purchases") { parameter("page", page); parameter("limit", limit) } }
 }

@@ -94,7 +94,13 @@ private fun HeroTemplateCard(template: TemplateItem, onClick: () -> Unit) {
             .clickable(onClick = onClick),
         contentAlignment = Alignment.BottomStart,
     ) {
-        NetworkImage(template.thumbnailUrl, template.name, Modifier.fillMaxSize())
+        // Full-bleed at roughly 900x1200, so this is the one place a summary needs the display
+        // copy; the card copy is the fallback for a template whose larger one isn't generated yet.
+        NetworkImage(
+            template.displayUrl ?: template.thumbnailUrl,
+            template.name,
+            Modifier.fillMaxSize(),
+        )
         // Keep the top of the image clean; darken only the lower half so the copy stays legible.
         Box(
             Modifier.fillMaxSize().background(

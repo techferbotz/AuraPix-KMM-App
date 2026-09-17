@@ -12,6 +12,7 @@ fun TemplateSummaryDto.toTemplateItem(): TemplateItem = TemplateItem(
     name = title,
     id = id,
     thumbnailUrl = thumbnailImageUrl,
+    displayUrl = thumbnailDisplayUrl,
     trending = isTrending,
     description = shortDescription,
 )

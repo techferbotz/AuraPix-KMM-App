@@ -6,8 +6,13 @@ import com.ferbotz.aurapix.billing.data.SubscriptionRemoteDataSource
 import com.ferbotz.aurapix.billing.data.SubscriptionsRepository
 import com.ferbotz.aurapix.category.data.CategoriesRepository
 import com.ferbotz.aurapix.category.data.CategoryRemoteDataSource
-import com.ferbotz.aurapix.core.config.DefaultRemoteConfig
-import com.ferbotz.aurapix.core.config.RemoteConfig
+import com.ferbotz.aurapix.core.config.AppBuildInfo
+import com.ferbotz.aurapix.core.config.DefaultMonetizationConfigProvider
+import com.ferbotz.aurapix.core.config.MonetizationConfigProvider
+import com.ferbotz.aurapix.core.config.RemoteConfigRemoteDataSource
+import com.ferbotz.aurapix.core.config.RemoteConfigRepository
+import com.ferbotz.aurapix.core.config.RemoteConfigRepositoryImpl
+import com.ferbotz.aurapix.core.config.appBuildInfo
 import com.ferbotz.aurapix.core.data.local.AppDatabase
 import com.ferbotz.aurapix.core.data.local.buildDatabase
 import com.ferbotz.aurapix.core.data.local.databaseBuilder
@@ -37,8 +42,11 @@ object DataModule {
     // ── Core infrastructure ─────────────────────────────────────────────────
     // Preferences must be first — the HTTP client reads the auth token from it.
     val preferences: AppPreferences by lazy { AppPreferences(Settings()) }
-    val remoteConfig: RemoteConfig by lazy { DefaultRemoteConfig() }
-    val httpClient: HttpClient by lazy { createHttpClient(preferences = preferences) }
+    val buildInfo: AppBuildInfo by lazy { appBuildInfo() }
+    val monetizationConfig: MonetizationConfigProvider by lazy { DefaultMonetizationConfigProvider() }
+    val httpClient: HttpClient by lazy {
+        createHttpClient(preferences = preferences, buildInfo = buildInfo)
+    }
     val database: AppDatabase by lazy { buildDatabase(databaseBuilder()) }
 
     // ── Remote data sources (per feature) ───────────────────────────────────
@@ -50,6 +58,7 @@ object DataModule {
     val profileRemoteDataSource by lazy { ProfileRemoteDataSource(httpClient) }
     val subscriptionRemoteDataSource by lazy { SubscriptionRemoteDataSource(httpClient) }
     val healthRemoteDataSource by lazy { HealthRemoteDataSource(httpClient) }
+    val remoteConfigRemoteDataSource by lazy { RemoteConfigRemoteDataSource(httpClient) }
 
     // ── Repositories (per feature) ──────────────────────────────────────────
     val feedRepository by lazy { FeedRepository(feedRemoteDataSource) }
@@ -62,4 +71,12 @@ object DataModule {
     val billingRemoteDataSource by lazy { BillingRemoteDataSource(httpClient) }
     val paymentManager by lazy { PaymentManager(billingRemoteDataSource) }
     val subscriptionsRepository by lazy { SubscriptionsRepository(subscriptionRemoteDataSource) }
+
+    /**
+     * Remote config — a **singleton**, never a factory: the cached document is restored in its
+     * constructor and a second instance would re-read it and fetch again.
+     */
+    val remoteConfigRepository: RemoteConfigRepository by lazy {
+        RemoteConfigRepositoryImpl(remoteConfigRemoteDataSource, preferences)
+    }
 }

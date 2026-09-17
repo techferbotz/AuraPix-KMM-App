@@ -18,13 +18,16 @@ data class PurchaseOffer(
 )
 
 /**
- * Remote-tunable monetization values. Delivered as a JSON blob so Firebase Remote Config can later
- * override the defaults without an app update. `freeUserOffers`/`proUserOffers` are shown in the
- * paywall depending on whether the user has an active subscription.
+ * Store offers and price copy, delivered as a bundled JSON blob so prices can be adjusted without
+ * touching code. `freeUserOffers`/`proUserOffers` are shown in the paywall depending on whether
+ * the user has an active subscription.
+ *
+ * What a generation **costs** is deliberately not here: the server is what charges it, so it comes
+ * from `RemoteConfig.generation.creditCost` (BE-005) and has one owner. Reintroducing it here
+ * would give the paywall a second number that can silently disagree with the one being charged.
  */
 @Serializable
 data class MonetizationConfig(
-    val generationCostGems: Int = 10,
     val currencySymbol: String = "₹",
     val freeUserOffers: List<PurchaseOffer> = emptyList(),
     val proUserOffers: List<PurchaseOffer> = emptyList(),

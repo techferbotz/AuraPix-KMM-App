@@ -49,6 +49,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.ferbotz.aurapix.core.media.rememberImagePicker
+import com.ferbotz.aurapix.core.config.LocalRemoteConfig
 import com.ferbotz.aurapix.core.ui.base.UiState
 import com.ferbotz.aurapix.core.ui.base.userMessage
 import com.ferbotz.aurapix.core.ui.components.AuraIconButton
@@ -81,21 +82,50 @@ fun TemplateDetailScreen(
         repeat(slotCount) { images.add(null) }
     }
     var pendingIndex by remember { mutableStateOf(-1) }
+
+    // Generation limits are mirrored from what the server enforces (BE-005), so check them here
+    // and keep a doomed upload on the device instead of spending the round trip to be rejected.
+    val limits = LocalRemoteConfig.current.generation
+    var rejection by remember { mutableStateOf<String?>(null) }
     val picker = rememberImagePicker { bytes ->
-        if (pendingIndex in images.indices) images[pendingIndex] = bytes
+        when {
+            bytes.size > limits.maxImageBytes ->
+                rejection = "That photo is too large. Please pick one under " +
+                    "${limits.maxImageBytes / (1024 * 1024)} MB."
+
+            pendingIndex in images.indices -> {
+                rejection = null
+                images[pendingIndex] = bytes
+            }
+        }
     }
 
     Scaffold(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
-            if (state is UiState.Success) {
+            if (state is UiState.Success && LocalRemoteConfig.current.features.imageGeneration) {
                 val filled = images.count { it != null }
-                val ready = slotCount > 0 && filled == slotCount
+                // A template asking for more photos than the server accepts can never succeed —
+                // say so rather than letting the user fill every slot and be rejected.
+                val withinCap = slotCount <= limits.maxImagesPerRequest
+                val ready = slotCount > 0 && filled == slotCount && withinCap
                 val remaining = slotCount - filled
                 Column(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background).navigationBarsPadding().padding(16.dp)) {
+                    rejection?.let {
+                        Text(
+                            it,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(bottom = 8.dp),
+                        )
+                    }
                     PrimaryButton(
-                        text = if (ready) "Generate · $generationCost gems" else "Add $remaining more photo${if (remaining == 1) "" else "s"}",
+                        text = when {
+                            !withinCap -> "Unavailable on this version"
+                            ready -> "Generate · $generationCost gems"
+                            else -> "Add $remaining more photo${if (remaining == 1) "" else "s"}"
+                        },
                         onClick = { onGenerate(images.filterNotNull()) },
                         enabled = ready,
                         modifier = Modifier.fillMaxWidth(),

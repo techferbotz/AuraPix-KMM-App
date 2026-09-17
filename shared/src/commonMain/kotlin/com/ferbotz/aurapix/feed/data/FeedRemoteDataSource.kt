@@ -1,5 +1,6 @@
 package com.ferbotz.aurapix.feed.data
 
+import com.ferbotz.aurapix.core.config.DEFAULT_PAGE_LIMIT
 import com.ferbotz.aurapix.core.data.remote.dto.CategorySummaryDto
 import com.ferbotz.aurapix.feed.data.dto.FeedResponseDto
 import com.ferbotz.aurapix.core.data.remote.dto.PagedResponse
@@ -21,10 +22,10 @@ class FeedRemoteDataSource(private val client: HttpClient) {
         safeApiCall { client.get("feed") }
 
     /** §4.5 — a TEMPLATE tray's paginated "See All" list. */
-    suspend fun getTrayTemplates(trayId: String, page: Int = 1, limit: Int = 20): Result<PagedResponse<TemplateSummaryDto>> =
+    suspend fun getTrayTemplates(trayId: String, page: Int = 1, limit: Int = DEFAULT_PAGE_LIMIT): Result<PagedResponse<TemplateSummaryDto>> =
         safeApiCall { client.get("feed/trays/$trayId") { parameter("page", page); parameter("limit", limit) } }
 
     /** §4.5 — a CATEGORY tray's paginated "See All" list. */
-    suspend fun getTrayCategories(trayId: String, page: Int = 1, limit: Int = 20): Result<PagedResponse<CategorySummaryDto>> =
+    suspend fun getTrayCategories(trayId: String, page: Int = 1, limit: Int = DEFAULT_PAGE_LIMIT): Result<PagedResponse<CategorySummaryDto>> =
         safeApiCall { client.get("feed/trays/$trayId") { parameter("page", page); parameter("limit", limit) } }
 }

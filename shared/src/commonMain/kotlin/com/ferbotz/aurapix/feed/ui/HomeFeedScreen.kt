@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.ferbotz.aurapix.core.config.LocalRemoteConfig
 import com.ferbotz.aurapix.core.ui.components.AuraTab
 import com.ferbotz.aurapix.core.ui.components.AuraTabScaffold
 import com.ferbotz.aurapix.core.ui.components.AuraTopBar
@@ -105,12 +106,19 @@ private fun FeedContent(
     onCategoryClick: (CategoryItem) -> Unit,
     onSeeAll: (FeedSection) -> Unit,
 ) {
+    // Kill switch: drop category trays before laying out, so the hero still lands on the first
+    // remaining tray rather than leaving a gap where a tray used to be.
+    val visible = if (LocalRemoteConfig.current.features.categories) {
+        sections
+    } else {
+        sections.filter { it.kind != FeedSectionKind.CATEGORIES }
+    }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(top = 16.dp, bottom = bottomInset),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
-        itemsIndexed(sections, key = { _, section -> section.id }) { index, section ->
+        itemsIndexed(visible, key = { _, section -> section.id }) { index, section ->
             // The first tray leads with the hero carousel when it's templates; everything else is a row.
             if (index == 0 && section.kind == FeedSectionKind.TEMPLATES) {
                 HeroCarousel(section.templates, onTemplateClick)

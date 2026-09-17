@@ -89,6 +89,9 @@ kotlin {
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
+            implementation(libs.kotlinx.coroutines.test)
+            // MockEngine — lets the header and repository tests drive the real HTTP client.
+            implementation(libs.ktor.client.mock)
         }
     }
 }

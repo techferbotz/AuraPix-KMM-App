@@ -33,6 +33,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.ferbotz.aurapix.core.config.LocalRemoteConfig
 import com.ferbotz.aurapix.core.ui.base.UiState
 import com.ferbotz.aurapix.core.ui.base.userMessage
 import com.ferbotz.aurapix.core.ui.components.AuraIconButton
@@ -118,6 +119,7 @@ private fun ProfileContent(
     onPrivacyPolicy: () -> Unit,
     onLogout: () -> Unit,
 ) {
+    val features = LocalRemoteConfig.current.features
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -168,8 +170,8 @@ private fun ProfileContent(
             }
         }
 
-        // Upgrade CTA — only when not already premium
-        if (!profile.isPremium) {
+        // Upgrade CTA — only when not already premium, and only while the switch is on
+        if (!profile.isPremium && features.premium) {
             GlassCard(glow = true, modifier = Modifier.fillMaxWidth()) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Icon(Icons.Rounded.WorkspacePremium, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp))
@@ -184,7 +186,9 @@ private fun ProfileContent(
 
         // Menu
         GlassCard(Modifier.fillMaxWidth(), contentPadding = PaddingValues(horizontal = 16.dp)) {
-            AuraListRow("Purchase Credits", leadingIcon = Icons.Rounded.ShoppingCart, onClick = onPurchaseCredits)
+            if (features.creditPurchase) {
+                AuraListRow("Purchase Credits", leadingIcon = Icons.Rounded.ShoppingCart, onClick = onPurchaseCredits)
+            }
             AuraListRow("Settings", leadingIcon = Icons.Rounded.Settings, onClick = onOpenSettings)
             AuraListRow("Privacy Policy", leadingIcon = Icons.Rounded.PrivacyTip, onClick = onPrivacyPolicy)
             AuraListRow(

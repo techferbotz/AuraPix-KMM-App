@@ -23,7 +23,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import androidx.compose.ui.platform.LocalUriHandler
 import com.ferbotz.aurapix.core.auth.rememberGoogleAuthProvider
+import com.ferbotz.aurapix.core.config.LocalRemoteConfig
 import com.ferbotz.aurapix.core.data.remote.ApiError
 import com.ferbotz.aurapix.core.di.DataModule
 import com.ferbotz.aurapix.core.media.rememberImageActions
@@ -63,9 +65,6 @@ import com.ferbotz.aurapix.template.ui.TemplateDetailViewModel
 import com.ferbotz.aurapix.core.ui.base.UiState
 import kotlinx.coroutines.delay
 
-private const val PRIVACY_URL = "https://policies.google.com/privacy"
-private const val TERMS_URL = "https://policies.google.com/terms"
-private const val SUPPORT_URL = "https://support.google.com"
 private const val TEMPLATE_SHARE_BASE = "https://aurapix.ferbotz.com/template/"
 
 @Composable
@@ -73,6 +72,10 @@ fun AuraNavHost(
     navController: NavHostController = rememberNavController(),
     auth: AuthState = remember { AuthState(DataModule.userManager) },
 ) {
+    // Legal URLs are served by GET /config so the pages can move without a release (BE-005).
+    val links = LocalRemoteConfig.current.links
+    val uriHandler = LocalUriHandler.current
+
     // Shared across TemplateDetail → Processing → Result/Failed so the generation survives navigation.
     val generationVm = remember { GenerationViewModel(DataModule.creationsRepository) }
     DisposableEffect(Unit) { onDispose { generationVm.onCleared() } }
@@ -137,8 +140,8 @@ fun AuraNavHost(
             val state by vm.templateState.collectAsState()
 
             val userManager = DataModule.userManager
-            val monetization = remember { DataModule.remoteConfig.monetization }
-            val cost = monetization.generationCostGems
+            val monetization = remember { DataModule.monetizationConfig.monetization }
+            val cost = LocalRemoteConfig.current.generation.creditCost
 
             // Generate gate: signed in → enough gems → generate; else show the login / paywall sheet.
             var loginImages by remember { mutableStateOf<List<ByteArray>?>(null) }
@@ -195,7 +198,7 @@ fun AuraNavHost(
 
         composable<ProcessingRoute> {
             val genState by generationVm.state.collectAsState()
-            val monetization = remember { DataModule.remoteConfig.monetization }
+            val monetization = remember { DataModule.monetizationConfig.monetization }
             var progress by remember { mutableFloatStateOf(0f) }
             var showCreditsPaywall by remember { mutableStateOf(false) }
 
@@ -280,8 +283,8 @@ fun AuraNavHost(
                 email = user.email ?: "",
                 avatarUrl = user.avatarUrl,
                 onBack = { navController.popBackStack() },
-                onPrivacyPolicy = { navController.navigate(WebViewRoute(PRIVACY_URL, "Privacy Policy")) },
-                onTerms = { navController.navigate(WebViewRoute(TERMS_URL, "Terms of Service")) },
+                onPrivacyPolicy = { navController.navigate(WebViewRoute(links.privacyPolicy, "Privacy Policy")) },
+                onTerms = { navController.navigate(WebViewRoute(links.terms, "Terms of Service")) },
                 onLogout = {
                     auth.logout()
                     DataModule.paymentManager.onLoggedOut()
@@ -291,7 +294,7 @@ fun AuraNavHost(
         }
 
         composable<PremiumPlansRoute> {
-            val vm = remember { BillingViewModel(DataModule.paymentManager, DataModule.userManager, DataModule.remoteConfig.monetization) }
+            val vm = remember { BillingViewModel(DataModule.paymentManager, DataModule.userManager, DataModule.monetizationConfig.monetization) }
             DisposableEffect(Unit) { onDispose { vm.onCleared() } }
             val billing by vm.state.collectAsState()
 
@@ -315,7 +318,7 @@ fun AuraNavHost(
         }
 
         composable<PurchaseCreditsRoute> {
-            val vm = remember { BillingViewModel(DataModule.paymentManager, DataModule.userManager, DataModule.remoteConfig.monetization) }
+            val vm = remember { BillingViewModel(DataModule.paymentManager, DataModule.userManager, DataModule.monetizationConfig.monetization) }
             DisposableEffect(Unit) { onDispose { vm.onCleared() } }
             val billing by vm.state.collectAsState()
 
@@ -329,7 +332,7 @@ fun AuraNavHost(
             PurchaseCreditsScreen(
                 credits = currentUserState().credits,
                 packs = billing.plans.filter { !it.isSubscription },
-                generationCostGems = DataModule.remoteConfig.monetization.generationCostGems,
+                generationCostGems = LocalRemoteConfig.current.generation.creditCost,
                 loading = billing.loading,
                 error = billing.error,
                 purchasingProductId = billing.purchasingProductId,
@@ -355,7 +358,7 @@ fun AuraNavHost(
         composable<HelpRoute> {
             HelpFaqScreen(
                 onBack = { navController.popBackStack() },
-                onContactSupport = { navController.navigate(WebViewRoute(SUPPORT_URL, "Support")) },
+                onContactSupport = { uriHandler.openUri("mailto:${links.supportEmail}") },
             )
         }
 
@@ -381,6 +384,9 @@ private fun HomeContainer(navController: NavHostController, auth: AuthState) {
     var tab by rememberSaveable(stateSaver = AuraTabSaver) { mutableStateOf(AuraTab.Feed) }
     // Single source of truth for user data (credits, avatar) — observed once, shown on every tab.
     val user = currentUserState()
+    // Read here rather than inside a callback: composition locals can only be read in a
+    // @Composable context, and the tab callbacks below are plain lambdas.
+    val links = LocalRemoteConfig.current.links
 
     when (tab) {
         AuraTab.Feed -> {
@@ -429,7 +435,7 @@ private fun HomeContainer(navController: NavHostController, auth: AuthState) {
                 onUpgrade = { navController.navigate(PremiumPlansRoute) },
                 onPurchaseCredits = { navController.navigate(PurchaseCreditsRoute) },
                 onOpenSettings = { navController.navigate(SettingsRoute) },
-                onPrivacyPolicy = { navController.navigate(WebViewRoute(PRIVACY_URL, "Privacy Policy")) },
+                onPrivacyPolicy = { navController.navigate(WebViewRoute(links.privacyPolicy, "Privacy Policy")) },
                 onRetry = { vm.refresh() },
                 onLogout = {
                     vm.logout()
