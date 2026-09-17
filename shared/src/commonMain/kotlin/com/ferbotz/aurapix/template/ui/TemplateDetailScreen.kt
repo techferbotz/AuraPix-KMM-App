@@ -157,7 +157,12 @@ private fun DetailContent(
     ) {
         // Hero
         Box(Modifier.fillMaxWidth().height(420.dp), contentAlignment = Alignment.BottomStart) {
-            NetworkImage(detail.thumbnailUrl, detail.title, Modifier.fillMaxSize())
+            NetworkImage(
+                detail.thumbnailUrl,
+                detail.title,
+                Modifier.fillMaxSize(),
+                previewUrl = detail.thumbnailCompressedUrl,
+            )
             Box(
                 Modifier.fillMaxSize().background(
                     Brush.verticalGradient(listOf(Color.Transparent, AuraTheme.colors.scrim))

@@ -10,7 +10,10 @@ data class TemplateDetailDto(
     val title: String,
     val shortDescription: String,
     val longDescription: String? = null,
+    /** Full-quality original — detail is the only endpoint that serves it. */
     val thumbnailImageUrl: String? = null,
+    /** The small WebP copy the feed card already loaded. Independently nullable. */
+    val thumbnailCompressedUrl: String? = null,
     val isTrending: Boolean = false,
     val status: String = "ACTIVE",
     val categories: List<CategorySummaryDto> = emptyList(),

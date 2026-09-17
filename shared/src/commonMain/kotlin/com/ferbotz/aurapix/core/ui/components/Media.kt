@@ -31,6 +31,11 @@ import com.ferbotz.aurapix.core.ui.theme.AuraShapes
  * Image surface backed by Coil 3. When [url] is null (the current UI-only state) it shows a
  * styled placeholder; pass a real URL later and it loads asynchronously. The single image
  * component used app-wide for thumbnails, hero shots and avatars.
+ *
+ * [previewUrl] is an optional low-res copy of [url], drawn underneath it so the surface is never
+ * blank while a large original downloads — the API serves one for template heroes, and it is the
+ * same URL the feed card just loaded, so it is normally already in Coil's cache. Coil keys its
+ * caches by URL, so the two sizes never share an entry.
  */
 @Composable
 fun NetworkImage(
@@ -39,6 +44,7 @@ fun NetworkImage(
     modifier: Modifier = Modifier,
     shape: Shape = RectangleShape,
     contentScale: ContentScale = ContentScale.Crop,
+    previewUrl: String? = null,
 ) {
     Box(
         modifier = modifier
@@ -53,6 +59,14 @@ fun NetworkImage(
             ),
         contentAlignment = Alignment.Center,
     ) {
+        if (previewUrl != null && previewUrl != url) {
+            AsyncImage(
+                model = previewUrl,
+                contentDescription = null,
+                contentScale = contentScale,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
         if (url != null) {
             AsyncImage(
                 model = url,
@@ -60,7 +74,7 @@ fun NetworkImage(
                 contentScale = contentScale,
                 modifier = Modifier.fillMaxSize(),
             )
-        } else {
+        } else if (previewUrl == null) {
             Icon(
                 Icons.Rounded.Image,
                 contentDescription = contentDescription,
