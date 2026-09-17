@@ -26,6 +26,7 @@ import androidx.navigation.toRoute
 import androidx.compose.ui.platform.LocalUriHandler
 import com.ferbotz.aurapix.core.auth.rememberGoogleAuthProvider
 import com.ferbotz.aurapix.core.config.LocalRemoteConfig
+import com.ferbotz.aurapix.core.config.Store
 import com.ferbotz.aurapix.core.data.remote.ApiError
 import com.ferbotz.aurapix.core.di.DataModule
 import com.ferbotz.aurapix.core.media.rememberImageActions
@@ -140,7 +141,7 @@ fun AuraNavHost(
             val state by vm.templateState.collectAsState()
 
             val userManager = DataModule.userManager
-            val monetization = remember { DataModule.monetizationConfig.monetization }
+            val store = LocalRemoteConfig.current.store
             val cost = LocalRemoteConfig.current.generation.creditCost
 
             // Generate gate: signed in → enough gems → generate; else show the login / paywall sheet.
@@ -184,7 +185,7 @@ fun AuraNavHost(
 
             paywallImages?.let { images ->
                 PaywallHost(
-                    config = monetization,
+                    store = store,
                     onDismiss = { paywallImages = null },
                     onPurchased = { totalCredits, subscriptionStatus ->
                         // Verify already updated the backend → apply the fresh balances + resume.
@@ -198,7 +199,7 @@ fun AuraNavHost(
 
         composable<ProcessingRoute> {
             val genState by generationVm.state.collectAsState()
-            val monetization = remember { DataModule.monetizationConfig.monetization }
+            val store = LocalRemoteConfig.current.store
             var progress by remember { mutableFloatStateOf(0f) }
             var showCreditsPaywall by remember { mutableStateOf(false) }
 
@@ -235,7 +236,7 @@ fun AuraNavHost(
 
             if (showCreditsPaywall) {
                 PaywallHost(
-                    config = monetization,
+                    store = store,
                     onDismiss = {
                         showCreditsPaywall = false
                         navController.popBackStack()
@@ -294,7 +295,15 @@ fun AuraNavHost(
         }
 
         composable<PremiumPlansRoute> {
-            val vm = remember { BillingViewModel(DataModule.paymentManager, DataModule.userManager, DataModule.monetizationConfig.monetization) }
+            val store = LocalRemoteConfig.current.store
+            val vm = remember {
+                BillingViewModel(
+                    DataModule.paymentManager,
+                    DataModule.userManager,
+                    store,
+                    Store.Kind.SUBSCRIPTION,
+                )
+            }
             DisposableEffect(Unit) { onDispose { vm.onCleared() } }
             val billing by vm.state.collectAsState()
 
@@ -318,7 +327,15 @@ fun AuraNavHost(
         }
 
         composable<PurchaseCreditsRoute> {
-            val vm = remember { BillingViewModel(DataModule.paymentManager, DataModule.userManager, DataModule.monetizationConfig.monetization) }
+            val store = LocalRemoteConfig.current.store
+            val vm = remember {
+                BillingViewModel(
+                    DataModule.paymentManager,
+                    DataModule.userManager,
+                    store,
+                    Store.Kind.ONE_TIME,
+                )
+            }
             DisposableEffect(Unit) { onDispose { vm.onCleared() } }
             val billing by vm.state.collectAsState()
 
@@ -331,13 +348,15 @@ fun AuraNavHost(
 
             PurchaseCreditsScreen(
                 credits = currentUserState().credits,
-                packs = billing.plans.filter { !it.isSubscription },
+                // The view model already filtered to ONE_TIME and ordered by the catalogue.
+                packs = billing.plans,
                 generationCostGems = LocalRemoteConfig.current.generation.creditCost,
+                defaultProductId = store.defaultProductId,
                 loading = billing.loading,
                 error = billing.error,
                 purchasingProductId = billing.purchasingProductId,
                 onBack = { navController.popBackStack() },
-                onSelectPack = { vm.purchase(it) },
+                onConfirm = { vm.purchase(it) },
                 onRetry = { vm.load() },
             )
         }

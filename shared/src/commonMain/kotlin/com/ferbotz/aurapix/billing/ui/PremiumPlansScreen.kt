@@ -28,6 +28,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.ferbotz.aurapix.core.config.Store
 import com.ferbotz.aurapix.core.ui.components.AmbientGlow
 import com.ferbotz.aurapix.core.ui.components.AuraIconButton
 import com.ferbotz.aurapix.core.ui.components.AuraTopBar
@@ -92,7 +93,7 @@ fun PremiumPlansScreen(
                         textAlign = TextAlign.Center,
                     )
                     Text(
-                        "Go unlimited. Cancel anytime.",
+                        plan?.product?.subtitle ?: "Go unlimited. Cancel anytime.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
@@ -107,17 +108,12 @@ fun PremiumPlansScreen(
 
                 plan != null -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     PricingCard(
-                        title = "Premium",
+                        title = plan.product.title,
                         price = plan.priceLabel,
-                        period = "month",
-                        features = listOf(
-                            "No ads",
-                            "${plan.gems} gems every month",
-                            "Priority rendering (10× faster)",
-                            "Exclusive premium styles",
-                            "Commercial usage rights",
-                        ),
-                        ctaText = "Go Premium",
+                        period = plan.product.periodLabel,
+                        // The perks are catalogue copy, so a change of plan needs no release.
+                        features = plan.product.perks,
+                        ctaText = plan.product.ctaLabel ?: "Go Premium",
                         onClick = onSubscribe,
                         modifier = Modifier.fillMaxWidth(),
                         highlighted = true,
@@ -127,7 +123,7 @@ fun PremiumPlansScreen(
                         onAccentColor = AuraTheme.colors.onPremium,
                     )
                     Text(
-                        "Cancel anytime · billed monthly",
+                        plan.product.footnote ?: "Cancel anytime · billed monthly",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
@@ -145,8 +141,9 @@ fun PremiumPlansScreen(
 @Composable
 private fun PremiumPlansScreenPreview() {
     AuraPixTheme {
+        val premium = Store.DEFAULT_PRODUCTS.first { it.kind == Store.Kind.SUBSCRIPTION }
         PremiumPlansScreen(
-            plan = BillingPlan("monthly", "monthly", "₹99", gems = 100, isSubscription = true, highlighted = true),
+            plan = BillingPlan(premium, premium.productId, premium.fallbackPriceLabel.orEmpty()),
         )
     }
 }

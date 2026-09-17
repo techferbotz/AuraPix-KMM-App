@@ -7,8 +7,6 @@ import com.ferbotz.aurapix.billing.data.SubscriptionsRepository
 import com.ferbotz.aurapix.category.data.CategoriesRepository
 import com.ferbotz.aurapix.category.data.CategoryRemoteDataSource
 import com.ferbotz.aurapix.core.config.AppBuildInfo
-import com.ferbotz.aurapix.core.config.DefaultMonetizationConfigProvider
-import com.ferbotz.aurapix.core.config.MonetizationConfigProvider
 import com.ferbotz.aurapix.core.config.RemoteConfigRemoteDataSource
 import com.ferbotz.aurapix.core.config.RemoteConfigRepository
 import com.ferbotz.aurapix.core.config.RemoteConfigRepositoryImpl
@@ -43,7 +41,6 @@ object DataModule {
     // Preferences must be first — the HTTP client reads the auth token from it.
     val preferences: AppPreferences by lazy { AppPreferences(Settings()) }
     val buildInfo: AppBuildInfo by lazy { appBuildInfo() }
-    val monetizationConfig: MonetizationConfigProvider by lazy { DefaultMonetizationConfigProvider() }
     val httpClient: HttpClient by lazy {
         createHttpClient(preferences = preferences, buildInfo = buildInfo)
     }

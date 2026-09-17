@@ -10,7 +10,7 @@ import androidx.compose.runtime.setValue
 import com.ferbotz.aurapix.billing.data.PurchaseCancelledException
 import com.ferbotz.aurapix.billing.data.RcPackage
 import com.ferbotz.aurapix.core.config.LocalRemoteConfig
-import com.ferbotz.aurapix.core.config.MonetizationConfig
+import com.ferbotz.aurapix.core.config.Store
 import com.ferbotz.aurapix.core.di.DataModule
 import kotlinx.coroutines.launch
 
@@ -21,7 +21,7 @@ import kotlinx.coroutines.launch
  */
 @Composable
 fun PaywallHost(
-    config: MonetizationConfig,
+    store: Store,
     onDismiss: () -> Unit,
     onPurchased: (totalCredits: Int, subscriptionStatus: String) -> Unit,
 ) {
@@ -40,13 +40,8 @@ fun PaywallHost(
             .onFailure { packages = emptyList(); error = "Couldn't load plans. Please try again."; loading = false }
     }
 
-    // productId → gems / highlight, from the monetization config (RC has price/availability; config has gems).
-    val gemsByProduct = remember(config) {
-        (config.freeUserOffers + config.proUserOffers).associate { it.productId to it.gems }
-    }
-    val highlightByProduct = remember(config) {
-        (config.freeUserOffers + config.proUserOffers).associate { it.productId to it.highlighted }
-    }
+    // The catalogue describes each product; the store SDK supplies price and availability.
+    val byProduct = remember(store) { store.products.associateBy { it.productId } }
 
     PaywallBottomSheet(
         packages = packages,
@@ -54,8 +49,8 @@ fun PaywallHost(
         purchasingProductId = purchasingProductId,
         errorMessage = error,
         generationCostGems = LocalRemoteConfig.current.generation.creditCost,
-        gemsForProduct = { gemsByProduct[it] },
-        highlightForProduct = { highlightByProduct[it] == true },
+        gemsForProduct = { byProduct[it]?.gems },
+        highlightForProduct = { byProduct[it]?.highlighted == true },
         onRetry = { reloadTick++ },
         onDismiss = onDismiss,
         onSelect = { pkg ->

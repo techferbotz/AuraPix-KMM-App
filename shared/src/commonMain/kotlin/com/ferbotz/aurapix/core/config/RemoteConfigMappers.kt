@@ -45,6 +45,8 @@ fun RemoteConfigDto?.toDomain(defaults: RemoteConfig = RemoteConfig.Default): Re
     val pd = defaults.pagination
     val k = links
     val kd = defaults.links
+    val st = store
+    val std = defaults.store
     return RemoteConfig(
         features = RemoteConfig.Features(
             imageGeneration = f?.imageGeneration ?: fd.imageGeneration,
@@ -82,5 +84,49 @@ fun RemoteConfigDto?.toDomain(defaults: RemoteConfig = RemoteConfig.Default): Re
             deleteAccount = k?.deleteAccount ?: kd.deleteAccount,
             supportEmail = k?.supportEmail ?: kd.supportEmail,
         ),
+        store = Store(
+            defaultProductId = st?.defaultProductId ?: std.defaultProductId,
+            // A present list wins whole, including an empty one; only an absent list defaults.
+            products = st?.products?.mapNotNull { it.toDomain() } ?: std.products,
+        ),
+    )
+}
+
+/**
+ * One catalogue entry, or null when it can't be drawn.
+ *
+ * An entry with no id, no title or an unrecognised `kind` is **dropped rather than guessed at**:
+ * there is no screen to put it on and no way to describe it, and a half-rendered product is worse
+ * than an absent one. Every other unknown value falls back, so one malformed entry never costs
+ * the rest of the catalogue.
+ */
+private fun StoreProductDto.toDomain(): Store.Product? {
+    val id = productId?.takeIf { it.isNotBlank() } ?: return null
+    val name = title?.takeIf { it.isNotBlank() } ?: return null
+    val productKind = when (kind?.uppercase()) {
+        "ONE_TIME" -> Store.Kind.ONE_TIME
+        "SUBSCRIPTION" -> Store.Kind.SUBSCRIPTION
+        else -> return null
+    }
+    return Store.Product(
+        productId = id,
+        kind = productKind,
+        audience = when (audience?.uppercase()) {
+            "FREE" -> Store.Audience.FREE
+            "PREMIUM" -> Store.Audience.PREMIUM
+            else -> Store.Audience.ALL
+        },
+        displayOrder = displayOrder ?: 0,
+        title = name,
+        subtitle = subtitle?.takeIf { it.isNotBlank() },
+        gems = gems?.takeIf { it >= 0 } ?: 0,
+        periodLabel = periodLabel?.takeIf { it.isNotBlank() },
+        imagesLabel = imagesLabel?.takeIf { it.isNotBlank() },
+        badge = badge?.takeIf { it.isNotBlank() },
+        highlighted = highlighted ?: false,
+        ctaLabel = ctaLabel?.takeIf { it.isNotBlank() },
+        footnote = footnote?.takeIf { it.isNotBlank() },
+        perks = perks?.filter { it.isNotBlank() } ?: emptyList(),
+        fallbackPriceLabel = fallbackPriceLabel?.takeIf { it.isNotBlank() },
     )
 }

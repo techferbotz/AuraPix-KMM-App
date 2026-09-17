@@ -36,6 +36,36 @@ data class RemoteConfigDto(
     val generation: GenerationDto? = null,
     val pagination: PaginationDto? = null,
     val links: LinksDto? = null,
+    val store: StoreDto? = null,
+)
+
+/**
+ * The store catalogue. [products] absent keeps the compiled-in list; present-but-empty hides the
+ * store, which is a deliberate kill switch rather than a missing value.
+ */
+@Serializable
+data class StoreDto(
+    val defaultProductId: String? = null,
+    val products: List<StoreProductDto>? = null,
+)
+
+@Serializable
+data class StoreProductDto(
+    val productId: String? = null,
+    val kind: String? = null,
+    val audience: String? = null,
+    val displayOrder: Int? = null,
+    val title: String? = null,
+    val subtitle: String? = null,
+    val gems: Int? = null,
+    val periodLabel: String? = null,
+    val imagesLabel: String? = null,
+    val badge: String? = null,
+    val highlighted: Boolean? = null,
+    val ctaLabel: String? = null,
+    val footnote: String? = null,
+    val perks: List<String>? = null,
+    val fallbackPriceLabel: String? = null,
 )
 
 @Serializable

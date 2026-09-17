@@ -18,6 +18,8 @@ data class RemoteConfig(
     val generation: Generation = Generation(),
     val pagination: Pagination = Pagination(),
     val links: Links = Links(),
+    /** The purchasable catalogue — see [Store]. */
+    val store: Store = Store(),
 ) {
 
     /**
