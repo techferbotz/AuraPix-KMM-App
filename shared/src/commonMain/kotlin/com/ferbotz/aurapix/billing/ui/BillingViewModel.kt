@@ -1,5 +1,6 @@
 package com.ferbotz.aurapix.billing.ui
 
+import co.touchlab.kermit.Logger
 import com.ferbotz.aurapix.billing.data.PaymentManager
 import com.ferbotz.aurapix.billing.data.PurchaseCancelledException
 import com.ferbotz.aurapix.billing.data.RcPackage
@@ -28,6 +29,8 @@ data class BillingPlan(
     val highlighted: Boolean get() = product.highlighted
     val isSubscription: Boolean get() = product.kind == Store.Kind.SUBSCRIPTION
 }
+
+private val billingLogger: Logger = Logger.withTag("AuraPix-Billing")
 
 data class BillingUiState(
     val loading: Boolean = true,
@@ -102,8 +105,19 @@ class BillingViewModel(
 
     /** Catalogue order, catalogue copy, store price. */
     private fun join(packages: List<RcPackage>): List<BillingPlan> {
-        val byProductId = packages.associateBy { it.productId }
-        return store.productsFor(kind, isPremium).mapNotNull { product ->
+        // Google Play reports a SUBSCRIPTION's store id as "<productId>:<basePlanId>", while
+        // one-time products carry the bare id. The catalogue names the product, not the base
+        // plan, so index both spellings rather than making every entry know its base plan.
+        // (If two base plans of one subscription were ever offered at once, the later wins —
+        // the catalogue would need an explicit basePlanId to choose between them.)
+        val byProductId = buildMap {
+            packages.forEach { pkg ->
+                put(pkg.productId, pkg)
+                put(pkg.productId.substringBefore(':'), pkg)
+            }
+        }
+        val catalogue = store.productsFor(kind, isPremium)
+        val plans = catalogue.mapNotNull { product ->
             val pkg = byProductId[product.productId] ?: return@mapNotNull null
             BillingPlan(
                 product = product,
@@ -111,5 +125,13 @@ class BillingViewModel(
                 priceLabel = pkg.priceLabel.ifBlank { product.fallbackPriceLabel.orEmpty() },
             )
         }
+        billingLogger.i { "Store offering for $kind: ${packages.map { it.productId }}" }
+        if (plans.size != catalogue.size) {
+            // Silently showing fewer plans than the catalogue lists is how an empty Premium
+            // screen happens; say which ids didn't line up.
+            val missed = catalogue.map { it.productId } - plans.map { it.productId }.toSet()
+            billingLogger.w { "No store package for $missed; offering has ${byProductId.keys}" }
+        }
+        return plans
     }
 }

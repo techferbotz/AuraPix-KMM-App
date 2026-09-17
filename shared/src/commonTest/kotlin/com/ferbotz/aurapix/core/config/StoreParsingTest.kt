@@ -3,7 +3,6 @@ package com.ferbotz.aurapix.core.config
 import com.ferbotz.aurapix.core.data.remote.auraJson
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -127,6 +126,7 @@ class StoreParsingTest {
         assertEquals("month", premium.periodLabel)
         assertEquals("Go Premium", premium.ctaLabel)
         assertTrue(premium.perks.isNotEmpty(), "the subscription card renders these")
-        assertFalse(premium.fallbackPriceLabel.isNullOrBlank())
+        // No compiled-in price: BE-007 serves none either, and a stale one could contradict Play.
+        assertNull(premium.fallbackPriceLabel)
     }
 }

@@ -77,8 +77,12 @@ data class Store(
     companion object {
         /**
          * The catalogue as it stands today, and the fallback when `/config` has never been
-         * reached. Product ids are the live RevenueCat ones — a mismatch here is what made the
-         * purchase screen show "0 gems" before this section existed.
+         * reached.
+         *
+         * These values are kept **identical to what the backend serves** (BE-007), so adopting
+         * the served catalogue changes nothing visible. No `fallbackPriceLabel` is set, matching
+         * the backend's reasoning: a price compiled into the app could disagree with what Play
+         * actually bills, and a missing price label is better than a wrong one.
          */
         val DEFAULT_PRODUCTS: List<Product> = listOf(
             Product(
@@ -86,21 +90,17 @@ data class Store(
                 kind = Kind.SUBSCRIPTION,
                 audience = Audience.FREE,
                 displayOrder = 1,
-                title = "Premium",
-                subtitle = "Go unlimited. Cancel anytime.",
+                title = "AuraPix Premium",
                 gems = 100,
                 periodLabel = "month",
                 highlighted = true,
                 ctaLabel = "Go Premium",
                 footnote = "Cancel anytime · billed monthly",
                 perks = listOf(
-                    "No ads",
                     "100 gems every month",
-                    "Priority rendering (10× faster)",
-                    "Exclusive premium styles",
-                    "Commercial usage rights",
+                    "Access to every template",
+                    "New templates as they land",
                 ),
-                fallbackPriceLabel = "₹100",
             ),
             Product(
                 productId = "gem_value_pack",
@@ -110,7 +110,6 @@ data class Store(
                 gems = 120,
                 badge = "Best value",
                 highlighted = true,
-                fallbackPriceLabel = "₹150",
             ),
             Product(
                 productId = "gem_starter_pack",
@@ -118,7 +117,6 @@ data class Store(
                 displayOrder = 3,
                 title = "Starter Pack",
                 gems = 50,
-                fallbackPriceLabel = "₹70",
             ),
             Product(
                 productId = "gem_pocket_pack",
@@ -126,7 +124,6 @@ data class Store(
                 displayOrder = 4,
                 title = "Pocket Pack",
                 gems = 10,
-                fallbackPriceLabel = "₹15",
             ),
         )
     }
