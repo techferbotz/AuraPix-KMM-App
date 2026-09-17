@@ -10,9 +10,13 @@ data class TemplateDetailDto(
     val title: String,
     val shortDescription: String,
     val longDescription: String? = null,
-    /** Full-quality original — detail is the only endpoint that serves it. */
+    /**
+     * Display copy of the hero: WebP, longest side 1280px, never upscaled. This is the largest
+     * size the API serves — the uploaded original is not reachable from any client endpoint, so
+     * don't treat this as a downloadable original (BE-002).
+     */
     val thumbnailImageUrl: String? = null,
-    /** The small WebP copy the feed card already loaded. Independently nullable. */
+    /** The <=512px WebP copy the feed card already loaded. Independently nullable. */
     val thumbnailCompressedUrl: String? = null,
     val isTrending: Boolean = false,
     val status: String = "ACTIVE",

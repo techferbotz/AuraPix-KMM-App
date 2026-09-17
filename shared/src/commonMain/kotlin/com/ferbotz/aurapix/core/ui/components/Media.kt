@@ -32,10 +32,10 @@ import com.ferbotz.aurapix.core.ui.theme.AuraShapes
  * styled placeholder; pass a real URL later and it loads asynchronously. The single image
  * component used app-wide for thumbnails, hero shots and avatars.
  *
- * [previewUrl] is an optional low-res copy of [url], drawn underneath it so the surface is never
- * blank while a large original downloads — the API serves one for template heroes, and it is the
- * same URL the feed card just loaded, so it is normally already in Coil's cache. Coil keys its
- * caches by URL, so the two sizes never share an entry.
+ * [previewUrl] is an optional smaller copy of [url], drawn underneath it so the surface is never
+ * blank while the full-size image downloads — the API serves one for template heroes, and it is
+ * the same URL the feed card just loaded, so it is normally already in Coil's cache. Coil keys
+ * its caches by URL, so the two sizes never share an entry.
  */
 @Composable
 fun NetworkImage(

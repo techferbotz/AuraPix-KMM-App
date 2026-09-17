@@ -16,9 +16,9 @@ data class TemplateSlotUi(
 data class TemplateDetailUi(
     val id: String,
     val title: String,
-    /** Full-quality hero image. */
+    /** Hero image, longest side 1280px — the largest size the API serves, not an original. */
     val thumbnailUrl: String? = null,
-    /** Low-res copy of [thumbnailUrl], already cached by the feed card that linked here. */
+    /** Smaller copy of [thumbnailUrl], already cached by the feed card that linked here. */
     val thumbnailCompressedUrl: String? = null,
     val description: String,
     val trending: Boolean = false,

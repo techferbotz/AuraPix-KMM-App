@@ -10,8 +10,9 @@ enum class FeedSectionKind { TEMPLATES, CATEGORIES }
 data class CategoryItem(
     val id: String,
     val name: String,
+    /** Card-sized copy (512px). What the feed's category cards draw. */
     val iconUrl: String? = null,
-    /** Wide banner art used by the larger feed category cards; falls back to [iconUrl]. */
+    /** Full-width header copy (1280px). Not interchangeable with [iconUrl] — see [BannerCategoryCard]. */
     val bannerUrl: String? = null,
 )
 

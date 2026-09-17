@@ -207,14 +207,21 @@ fun TemplateTile(template: TemplateItem, modifier: Modifier = Modifier, onClick:
     }
 }
 
-/** Large banner-backed category card. Fills the size given by [modifier]; uses [CategoryItem.bannerUrl]. */
+/**
+ * Banner-styled category card — image background, scrim and name. Fills the size given by [modifier].
+ *
+ * Draws [CategoryItem.iconUrl], the card-sized (512px) copy: every call site here is a card, not a
+ * full-width header. [CategoryItem.bannerUrl] is the 1280px header copy and is only a fallback for a
+ * category with no icon — reaching for it by default would download four times the pixels a card can
+ * show (BE-004).
+ */
 @Composable
 fun BannerCategoryCard(category: CategoryItem, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Box(
         modifier = modifier.clip(AuraShapes.large).clickable(onClick = onClick),
         contentAlignment = Alignment.BottomStart,
     ) {
-        NetworkImage(category.bannerUrl ?: category.iconUrl, category.name, Modifier.fillMaxSize())
+        NetworkImage(category.iconUrl ?: category.bannerUrl, category.name, Modifier.fillMaxSize())
         Box(
             Modifier.fillMaxSize().background(
                 Brush.verticalGradient(listOf(Color.Transparent, AuraTheme.colors.scrim))
