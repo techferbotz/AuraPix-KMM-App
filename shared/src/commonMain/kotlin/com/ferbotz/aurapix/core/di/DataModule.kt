@@ -17,6 +17,7 @@ import com.ferbotz.aurapix.core.data.local.databaseBuilder
 import com.ferbotz.aurapix.core.data.prefs.AppPreferences
 import com.ferbotz.aurapix.core.data.remote.HealthRemoteDataSource
 import com.ferbotz.aurapix.core.data.remote.createHttpClient
+import com.ferbotz.aurapix.core.ui.theme.ThemeManager
 import com.ferbotz.aurapix.creation.data.CreationRemoteDataSource
 import com.ferbotz.aurapix.creation.data.CreationsRepository
 import com.ferbotz.aurapix.feed.data.FeedRemoteDataSource
@@ -53,6 +54,9 @@ object DataModule {
         )
     }
     val database: AppDatabase by lazy { buildDatabase(databaseBuilder()) }
+
+    /** App-wide appearance. Collected at the app root and flipped by the Settings switch. */
+    val themeManager by lazy { ThemeManager(preferences) }
 
     // ── Remote data sources (per feature) ───────────────────────────────────
     val feedRemoteDataSource by lazy { FeedRemoteDataSource(httpClient) }

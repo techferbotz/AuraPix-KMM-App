@@ -283,10 +283,13 @@ fun AuraNavHost(
 
         composable<SettingsRoute> {
             val user = currentUserState()
+            val themeMode by DataModule.themeManager.mode.collectAsState()
             SettingsScreen(
                 name = user.name ?: "",
                 email = user.email ?: "",
                 avatarUrl = user.avatarUrl,
+                darkTheme = themeMode.isDark,
+                onDarkThemeChange = { DataModule.themeManager.setDark(it) },
                 onBack = { navController.popBackStack() },
                 onPrivacyPolicy = { navController.navigate(WebViewRoute(links.privacyPolicy, "Privacy Policy")) },
                 onTerms = { navController.navigate(WebViewRoute(links.terms, "Terms of Service")) },

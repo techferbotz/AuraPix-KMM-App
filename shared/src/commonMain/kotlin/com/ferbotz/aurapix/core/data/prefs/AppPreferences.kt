@@ -47,6 +47,11 @@ class AppPreferences(private val settings: Settings) {
         get() = settings.getString(KEY_SUBSCRIPTION, DEFAULT_SUBSCRIPTION)
         set(value) = settings.putString(KEY_SUBSCRIPTION, value)
 
+    /**
+     * The user's appearance choice, as a `ThemeMode.storageKey`. Read and written through
+     * `ThemeManager`, which owns the parsing — the default is dark, and the device's night
+     * setting is deliberately not consulted.
+     */
     var themeMode: String
         get() = settings.getString(KEY_THEME, DEFAULT_THEME)
         set(value) = settings.putString(KEY_THEME, value)
@@ -112,7 +117,7 @@ class AppPreferences(private val settings: Settings) {
         const val KEY_DEVICE_ID = "device_id"
         const val KEY_REMOTE_CONFIG = "remote_config"
         const val KEY_REMOTE_CONFIG_AT = "remote_config_fetched_at"
-        const val DEFAULT_THEME = "system"
+        const val DEFAULT_THEME = "dark"
         const val DEFAULT_SUBSCRIPTION = "NONE"
     }
 }

@@ -12,6 +12,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.Logout
 import androidx.compose.material.icons.automirrored.rounded.OpenInNew
+import androidx.compose.material.icons.rounded.DarkMode
+import androidx.compose.material.icons.rounded.LightMode
 import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -34,13 +36,19 @@ import com.ferbotz.aurapix.core.ui.components.GlassCard
 import com.ferbotz.aurapix.core.ui.components.OverlineLabel
 import com.ferbotz.aurapix.core.ui.theme.AuraPixTheme
 
-/** App & account settings, grouped into glass sections. Account is driven by the real user. */
+/**
+ * App & account settings, grouped into glass sections. Account is driven by the real user, and
+ * [darkTheme] by `ThemeManager` — the switch here is the only way to change the app's appearance,
+ * since the theme deliberately ignores the device's night setting.
+ */
 @Composable
 fun SettingsScreen(
     modifier: Modifier = Modifier,
     name: String = "",
     email: String = "",
     avatarUrl: String? = null,
+    darkTheme: Boolean = true,
+    onDarkThemeChange: (Boolean) -> Unit = {},
     onBack: () -> Unit = {},
     onPrivacyPolicy: () -> Unit = {},
     onTerms: () -> Unit = {},
@@ -80,6 +88,15 @@ fun SettingsScreen(
                     leadingIcon = Icons.AutoMirrored.Rounded.Logout,
                     tint = MaterialTheme.colorScheme.error,
                     onClick = onLogout,
+                )
+            }
+
+            SettingsSection("Appearance") {
+                AuraListRow(
+                    "Dark Theme",
+                    subtitle = if (darkTheme) "Violet on near-black" else "Violet on the logo's lavender",
+                    leadingIcon = if (darkTheme) Icons.Rounded.DarkMode else Icons.Rounded.LightMode,
+                    trailing = { AuraToggle(darkTheme, onDarkThemeChange) },
                 )
             }
 
@@ -132,6 +149,16 @@ private fun SettingsSection(title: String, content: @Composable () -> Unit) {
 
 @Preview
 @Composable
-private fun SettingsScreenPreview() {
-    AuraPixTheme { SettingsScreen(name = "Julian Vane", email = "julian.vane@gmail.com") }
+private fun SettingsScreenLightPreview() {
+    AuraPixTheme(darkTheme = false) {
+        SettingsScreen(name = "Julian Vane", email = "julian.vane@gmail.com", darkTheme = false)
+    }
+}
+
+@Preview
+@Composable
+private fun SettingsScreenDarkPreview() {
+    AuraPixTheme(darkTheme = true) {
+        SettingsScreen(name = "Julian Vane", email = "julian.vane@gmail.com", darkTheme = true)
+    }
 }

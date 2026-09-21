@@ -1,6 +1,5 @@
 package com.ferbotz.aurapix.core.ui.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -37,12 +36,14 @@ object AuraTheme {
  * single-file color scheme, Inter typography and shared shapes, and exposes the extended
  * tokens via [AuraTheme].
  *
- * [darkTheme] follows the system setting by default. Pass it explicitly to pin a theme — that's
- * how a user-facing appearance preference would drive this, and how the `@Preview`s show both.
+ * [darkTheme] is the **user's** choice, not the device's: this deliberately never calls
+ * `isSystemInDarkTheme()`, so a phone in daylight mode still opens AuraPix in dark. The live
+ * value comes from `ThemeManager` at the app root (`App`), the Settings switch writes it, and the
+ * default here — dark — is what a fresh install and every `@Preview` gets.
  */
 @Composable
 fun AuraPixTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    darkTheme: Boolean = true,
     content: @Composable () -> Unit,
 ) {
     CompositionLocalProvider(
