@@ -73,6 +73,10 @@ fun AuraNavHost(
     navController: NavHostController = rememberNavController(),
     auth: AuthState = remember { AuthState(DataModule.userManager) },
 ) {
+    // A 401 drops the session from the network layer (BE-008); keep the nav graph in step so the
+    // app quietly becomes a guest wherever the user is, rather than carrying on as signed in.
+    LaunchedEffect(auth) { auth.observeSession() }
+
     // Legal URLs are served by GET /config so the pages can move without a release (BE-005).
     val links = LocalRemoteConfig.current.links
     val uriHandler = LocalUriHandler.current

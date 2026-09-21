@@ -16,6 +16,7 @@ import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.plugins.plugin
 import io.ktor.client.request.header
 import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 
@@ -41,10 +42,17 @@ val auraJson: Json = Json {
 /** Kermit logger for all networking. Logs to Logcat (Android) and the device console (iOS). */
 val httpLogger: KermitLogger = KermitLogger.withTag("AuraPix-HTTP")
 
+/**
+ * @param onUnauthorized invoked when a request that carried a token comes back `401`. Since
+ *   BE-008 the access token has no expiry, so this no longer means "aged out" — the token was
+ *   rejected, in practice because the server rotated its signing key. Re-authenticating is the
+ *   only recovery, and it is the caller's job to drop the session.
+ */
 fun createHttpClient(
     engine: HttpClientEngine = defaultHttpEngine(),
     preferences: AppPreferences,
     buildInfo: AppBuildInfo = appBuildInfo(),
+    onUnauthorized: () -> Unit = {},
 ): HttpClient {
     val client = HttpClient(engine) {
         // Do NOT set expectSuccess=true — we must read the body on 4xx/5xx to parse errorCode.
@@ -56,8 +64,11 @@ fun createHttpClient(
                     httpLogger.d { message }
                 }
             }
-            // ALL → request line, all headers (incl. Authorization), and request/response bodies.
+            // ALL → request line, all headers, and request/response bodies…
             level = LogLevel.ALL
+            // …except the bearer token. It never expires now (BE-008), so anything that reads a
+            // log line holds a permanent credential rather than one that dies within the month.
+            sanitizeHeader { it == HttpHeaders.Authorization }
         }
         install(HttpTimeout) {
             requestTimeoutMillis = 30_000
@@ -81,11 +92,18 @@ fun createHttpClient(
         val token = preferences.authToken
         if (token != null) {
             request.headers.append(HttpHeaders.Authorization, "Bearer $token")
-            httpLogger.d { "→ ${request.method.value} ${request.url.buildString()} | Authorization: Bearer $token" }
+            httpLogger.d { "→ ${request.method.value} ${request.url.buildString()} | (authenticated)" }
         } else {
             httpLogger.d { "→ ${request.method.value} ${request.url.buildString()} | (no auth token — guest)" }
         }
-        execute(request)
+        val call = execute(request)
+        // Only when we actually sent a token: an anonymous 401 says nothing about the session,
+        // and signing out over one would be a bug of its own.
+        if (token != null && call.response.status == HttpStatusCode.Unauthorized) {
+            httpLogger.w { "401 on ${request.url.buildString()} with a stored token — dropping the session" }
+            onUnauthorized()
+        }
+        call
     }
     return client
 }

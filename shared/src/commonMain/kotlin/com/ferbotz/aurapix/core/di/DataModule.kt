@@ -42,7 +42,15 @@ object DataModule {
     val preferences: AppPreferences by lazy { AppPreferences(Settings()) }
     val buildInfo: AppBuildInfo by lazy { appBuildInfo() }
     val httpClient: HttpClient by lazy {
-        createHttpClient(preferences = preferences, buildInfo = buildInfo)
+        createHttpClient(
+            preferences = preferences,
+            buildInfo = buildInfo,
+            // Same path as the Logout button, so a rejected token leaves the app in a state the
+            // user could have reached themselves: signed out, still on whatever screen they were
+            // on, browsing as a guest. `userManager` is resolved lazily here — it is built on top
+            // of this very client, so referencing it at construction time would be a cycle.
+            onUnauthorized = { userManager.logout() },
+        )
     }
     val database: AppDatabase by lazy { buildDatabase(databaseBuilder()) }
 
