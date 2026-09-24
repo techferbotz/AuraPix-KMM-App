@@ -34,7 +34,9 @@ import com.ferbotz.aurapix.core.ui.components.AuraTab
 import com.ferbotz.aurapix.core.ui.components.AuraTabScaffold
 import com.ferbotz.aurapix.core.ui.components.AuraTopBar
 import com.ferbotz.aurapix.core.ui.components.Avatar
+import com.ferbotz.aurapix.core.ui.base.PagedList
 import com.ferbotz.aurapix.core.ui.components.CreditsBadge
+import com.ferbotz.aurapix.core.ui.components.LoadMoreFooter
 import com.ferbotz.aurapix.core.ui.components.NetworkImage
 import com.ferbotz.aurapix.core.ui.components.PrimaryButton
 import com.ferbotz.aurapix.core.ui.components.StatusBadge
@@ -42,15 +44,19 @@ import com.ferbotz.aurapix.core.ui.theme.AuraPixTheme
 import com.ferbotz.aurapix.core.ui.theme.AuraShapes
 import com.ferbotz.aurapix.core.ui.theme.AuraTheme
 
-/** Past creations: a 2-column gallery, with loading + empty states. */
+/**
+ * Past creations: a 2-column gallery, with loading + empty states. Older creations load a page at
+ * a time as the user nears the end.
+ */
 @Composable
 fun HistoryScreen(
     modifier: Modifier = Modifier,
     credits: Int = 50,
     avatarUrl: String? = null,
-    items: List<HistoryItem> = sampleHistory,
+    creations: PagedList<HistoryItem> = PagedList(sampleHistory),
     loading: Boolean = false,
     onItemClick: (HistoryItem) -> Unit = {},
+    onLoadMore: () -> Unit = {},
     selectedTab: AuraTab = AuraTab.MyCreations,
     onSelectTab: (AuraTab) -> Unit = {},
 ) {
@@ -77,7 +83,7 @@ fun HistoryScreen(
                     color = MaterialTheme.colorScheme.primary,
                 )
 
-                items.isEmpty() -> EmptyCreations(
+                creations.items.isEmpty() -> EmptyCreations(
                     onCreate = { onSelectTab(AuraTab.Feed) },
                     modifier = Modifier.align(Alignment.Center),
                 )
@@ -87,13 +93,16 @@ fun HistoryScreen(
                     contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = pad.calculateBottomPadding()),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    items(items.chunked(2)) { row ->
+                    items(creations.items.chunked(2)) { row ->
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             row.forEach { historyItem ->
                                 HistoryCard(historyItem, Modifier.weight(1f), onClick = { onItemClick(historyItem) })
                             }
                             if (row.size == 1) Box(Modifier.weight(1f))
                         }
+                    }
+                    if (creations.hasMore) {
+                        item(key = "load-more") { LoadMoreFooter(creations, onLoadMore) }
                     }
                 }
             }
@@ -166,5 +175,5 @@ private fun HistoryScreenPreview() {
 @Preview
 @Composable
 private fun HistoryScreenEmptyPreview() {
-    AuraPixTheme { HistoryScreen(items = emptyList()) }
+    AuraPixTheme { HistoryScreen(creations = PagedList()) }
 }

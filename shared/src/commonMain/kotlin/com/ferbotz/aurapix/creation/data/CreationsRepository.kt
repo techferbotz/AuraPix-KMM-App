@@ -8,38 +8,42 @@ import com.ferbotz.aurapix.creation.data.local.CreationDao
 import com.ferbotz.aurapix.creation.data.local.CreationEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Offline-first creations + the generate/poll flow.
  *
- * [observeCreations] is the source of truth: it mirrors the Room cache (so the screen updates
- * live as rows change) and kicks off a network refresh, surfacing an error only when there is
- * nothing cached to show.
+ * The Room cache is the source of truth for My Creations: [observeCreations] mirrors it, so the
+ * screen updates live as rows change, and [loadCreationsPage] fills it from the network a page at
+ * a time.
  */
 class CreationsRepository(
     private val remote: CreationRemoteDataSource,
     private val dao: CreationDao,
 ) {
-    fun observeCreations(): Flow<DataState<List<CreationEntity>>> = channelFlow {
-        send(DataState.Loading)
-        // Mirror the local cache — keeps emitting as the DB changes (refresh, poll updates).
-        launch {
-            dao.observeAll().collect { send(DataState.Success(it)) }
+    /** Every cached creation, newest first — all the pages loaded so far. */
+    fun observeCreations(): Flow<List<CreationEntity>> = dao.observeAll()
+
+    /**
+     * Loads one page of `GET /creations` (§4.11) into the cache and says whether another follows.
+     *
+     * Page 1 replaces the cache only when the two disagree — rows from another account, or a
+     * creation the server no longer has. When they agree, rows from later pages stay put, so
+     * coming back to the list doesn't shrink it to one page under the user's thumb. The last page
+     * also drops anything cached beyond it: past the end, the server has nothing.
+     */
+    suspend fun loadCreationsPage(page: Int): Result<Boolean> = withContext(Dispatchers.Default) {
+        remote.getCreations(page).map { paged ->
+            val rows = paged.items.map { it.toEntity() }
+            if (page == 1 && (rows.isEmpty() || dao.newestIds(rows.size) != rows.map { it.id })) dao.clear()
+            dao.upsertAll(rows)
+            if (!paged.hasMore) rows.lastOrNull()?.let { dao.deleteOlderThan(it.createdAt) }
+            paged.hasMore
         }
-        // Refresh from network; only surface the error if we have no cache to fall back on.
-        remote.getCreations().fold(
-            onSuccess = { paged ->
-                dao.clear()
-                dao.upsertAll(paged.items.map { it.toEntity() })
-            },
-            onFailure = { if (dao.count() == 0) send(DataState.Error(it.asApiError())) },
-        )
-    }.flowOn(Dispatchers.Default)
+    }
 
     /**
      * Starts a generation, then long-polls the creation until COMPLETED/FAILED, caching each

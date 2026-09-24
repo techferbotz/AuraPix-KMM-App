@@ -40,6 +40,7 @@ import com.ferbotz.aurapix.billing.ui.CreditsSuccessScreen
 import com.ferbotz.aurapix.billing.ui.BillingViewModel
 import com.ferbotz.aurapix.billing.ui.PaywallHost
 import com.ferbotz.aurapix.creation.ui.GenerationFailedScreen
+import com.ferbotz.aurapix.creation.ui.asFailure
 import com.ferbotz.aurapix.profile.ui.HelpFaqScreen
 import com.ferbotz.aurapix.creation.ui.HistoryScreen
 import com.ferbotz.aurapix.category.ui.CategoryDetailScreen
@@ -70,6 +71,7 @@ import com.ferbotz.aurapix.profile.ui.LoginUiState
 import com.ferbotz.aurapix.profile.ui.LoginViewModel
 import com.ferbotz.aurapix.profile.ui.ProfileViewModel
 import com.ferbotz.aurapix.template.ui.TemplateDetailViewModel
+import com.ferbotz.aurapix.core.ui.base.PagedList
 import com.ferbotz.aurapix.core.ui.base.UiState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -143,6 +145,7 @@ fun AuraNavHost(
                 onTemplateClick = { navController.navigate(TemplateDetailRoute(it.id, it.name)) },
                 onCategoryClick = { navController.navigate(CategoryDetailRoute(it.id, it.name)) },
                 onRetry = { vm.retry() },
+                onLoadMore = { vm.loadMore() },
             )
         }
 
@@ -158,6 +161,7 @@ fun AuraNavHost(
                 onBack = { navController.popBackStack() },
                 onTemplateClick = { navController.navigate(TemplateDetailRoute(it.id, it.name)) },
                 onRetry = { vm.retry() },
+                onLoadMore = { vm.loadMore() },
             )
         }
 
@@ -246,11 +250,13 @@ fun AuraNavHost(
             }
             LaunchedEffect(genState) {
                 when (val s = genState) {
+                    // A failure replaces only this screen: the template stays underneath, so the
+                    // failure screen's "Back to template" is a plain pop.
                     is UiState.Success ->
                         if (s.data.status == "COMPLETED") {
                             navController.navigate(ResultRoute(s.data.id)) { popUpTo(HomeRoute) { inclusive = false } }
                         } else {
-                            navController.navigate(GenerationFailedRoute) { popUpTo(HomeRoute) { inclusive = false } }
+                            navController.navigate(GenerationFailedRoute) { popUpTo(ProcessingRoute) { inclusive = true } }
                         }
                     is UiState.Error ->
                         // 402 INSUFFICIENT_CREDITS: server balance is short → offer to top up and resume,
@@ -258,7 +264,7 @@ fun AuraNavHost(
                         if (s.error is ApiError.InsufficientCredits) {
                             showCreditsPaywall = true
                         } else {
-                            navController.navigate(GenerationFailedRoute) { popUpTo(HomeRoute) { inclusive = false } }
+                            navController.navigate(GenerationFailedRoute) { popUpTo(ProcessingRoute) { inclusive = true } }
                         }
                     else -> {}
                 }
@@ -289,21 +295,36 @@ fun AuraNavHost(
             val state by vm.state.collectAsState()
             val data = (state as? UiState.Success)?.data
             val imageActions = rememberImageActions()
-            ResultScreen(
-                title = data?.templateTitleSnapshot ?: "",
-                imageUrl = data?.generatedImageUrl,
-                onBack = { navController.popBackStack(HomeRoute, inclusive = false) },
-                onDownload = { data?.generatedImageUrl?.let { imageActions.download(it) } },
-                onShare = { data?.generatedImageUrl?.let { imageActions.share(it) } },
-            )
+            if (data?.status == "FAILED") {
+                // A failed creation (opened from My Creations) has no image to show — say why
+                // instead (§4.12). Its photos are gone, so trying again starts at the template.
+                GenerationFailedScreen(
+                    failure = data.asFailure(),
+                    onOpenTemplate = { navController.navigate(TemplateDetailRoute(data.templateId, data.templateTitleSnapshot)) },
+                    onGoHome = { navController.popBackStack(HomeRoute, inclusive = false) },
+                )
+            } else {
+                ResultScreen(
+                    title = data?.templateTitleSnapshot ?: "",
+                    imageUrl = data?.generatedImageUrl,
+                    onBack = { navController.popBackStack(HomeRoute, inclusive = false) },
+                    onDownload = { data?.generatedImageUrl?.let { imageActions.download(it) } },
+                    onShare = { data?.generatedImageUrl?.let { imageActions.share(it) } },
+                )
+            }
         }
 
         composable<GenerationFailedRoute> {
+            val failure by generationVm.failure.collectAsState()
             GenerationFailedScreen(
+                failure = failure,
+                generationCost = LocalRemoteConfig.current.generation.creditCost,
                 onRetry = {
                     generationVm.retry()
                     navController.navigate(ProcessingRoute) { popUpTo(GenerationFailedRoute) { inclusive = true } }
                 },
+                // The template screen is still underneath (see ProcessingRoute).
+                onOpenTemplate = { navController.popBackStack() },
                 onGoHome = { navController.popBackStack(HomeRoute, inclusive = false) },
             )
         }
@@ -525,13 +546,14 @@ private fun HomeContainer(navController: NavHostController, auth: AuthState) {
             val state by vm.state.collectAsState()
 
             HistoryScreen(
-                items = (state as? UiState.Success)?.data ?: emptyList(),
+                creations = (state as? UiState.Success)?.data ?: PagedList(),
                 loading = state is UiState.Loading,
                 credits = user.credits,
                 avatarUrl = user.avatarUrl,
                 selectedTab = tab,
                 onSelectTab = { tab = it },
                 onItemClick = { navController.navigate(ResultRoute(it.id)) },
+                onLoadMore = { vm.loadMore() },
             )
         }
 

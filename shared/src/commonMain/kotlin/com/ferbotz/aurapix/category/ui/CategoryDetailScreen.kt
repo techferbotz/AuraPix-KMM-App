@@ -31,24 +31,30 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.ferbotz.aurapix.core.ui.components.AuraIconButton
 import com.ferbotz.aurapix.core.ui.components.AuraTopBar
+import com.ferbotz.aurapix.core.ui.components.LoadMoreFooter
 import com.ferbotz.aurapix.core.ui.components.NetworkImage
 import com.ferbotz.aurapix.core.ui.components.PrimaryButton
 import com.ferbotz.aurapix.core.ui.components.StatusBadge
 import com.ferbotz.aurapix.core.ui.theme.AuraPixTheme
 import com.ferbotz.aurapix.core.ui.theme.AuraShapes
 import com.ferbotz.aurapix.core.ui.theme.AuraTheme
+import com.ferbotz.aurapix.core.ui.base.PagedList
 import com.ferbotz.aurapix.core.ui.base.UiState
 import com.ferbotz.aurapix.core.ui.base.userMessage
 
-/** Category detail: the category name in the top bar and its templates as a 2-column grid. */
+/**
+ * Category detail: the category name in the top bar and its templates as a 2-column grid, the
+ * next page loading as the user nears the end.
+ */
 @Composable
 fun CategoryDetailScreen(
     categoryName: String,
-    state: UiState<List<CategoryTemplate>>,
+    state: UiState<PagedList<CategoryTemplate>>,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     onTemplateClick: (CategoryTemplate) -> Unit = {},
     onRetry: () -> Unit = {},
+    onLoadMore: () -> Unit = {},
 ) {
     Scaffold(
         modifier = modifier,
@@ -72,14 +78,14 @@ fun CategoryDetailScreen(
                     CategoryMessage(state.error.userMessage(), onRetry, Modifier.align(Alignment.Center))
 
                 is UiState.Success ->
-                    if (state.data.isEmpty()) {
+                    if (state.data.items.isEmpty()) {
                         CategoryMessage(
                             "No templates in this category yet.",
                             onRetry,
                             Modifier.align(Alignment.Center),
                         )
                     } else {
-                        CategoryTemplateGrid(state.data, onTemplateClick)
+                        CategoryTemplateGrid(state.data, onTemplateClick, onLoadMore)
                     }
             }
         }
@@ -88,21 +94,25 @@ fun CategoryDetailScreen(
 
 @Composable
 private fun CategoryTemplateGrid(
-    templates: List<CategoryTemplate>,
+    templates: PagedList<CategoryTemplate>,
     onTemplateClick: (CategoryTemplate) -> Unit,
+    onLoadMore: () -> Unit,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        items(templates.chunked(2)) { row ->
+        items(templates.items.chunked(2)) { row ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 row.forEach { template ->
                     CategoryTemplateCard(template, Modifier.weight(1f).aspectRatio(0.72f)) { onTemplateClick(template) }
                 }
                 if (row.size == 1) Box(Modifier.weight(1f))
             }
+        }
+        if (templates.hasMore) {
+            item(key = "load-more") { LoadMoreFooter(templates, onLoadMore) }
         }
     }
 }
@@ -159,10 +169,12 @@ private fun CategoryDetailScreenPreview() {
         CategoryDetailScreen(
             categoryName = "Anime",
             state = UiState.Success(
-                listOf(
-                    CategoryTemplate(id = "1", name = "Anime Hero", trending = true),
-                    CategoryTemplate(id = "2", name = "Manga Ink"),
-                    CategoryTemplate(id = "3", name = "Chibi Style"),
+                PagedList(
+                    listOf(
+                        CategoryTemplate(id = "1", name = "Anime Hero", trending = true),
+                        CategoryTemplate(id = "2", name = "Manga Ink"),
+                        CategoryTemplate(id = "3", name = "Chibi Style"),
+                    )
                 )
             ),
             onBack = {},

@@ -7,8 +7,11 @@ import com.ferbotz.aurapix.creation.data.CreationsRepository
 import com.ferbotz.aurapix.creation.data.dto.CreationDetailDto
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /**
@@ -18,7 +21,8 @@ import kotlinx.coroutines.launch
  *
  * Once `/generate` has produced a creation id, [retry] re-polls that SAME creation (`wait=true`)
  * rather than starting a new generation — a socket timeout or transient API failure must never
- * burn credits on a second image.
+ * burn credits on a second image. The exception is a creation that came back `FAILED`: polling
+ * it again only returns the same failure, so there a retry is a new generation.
  */
 class GenerationViewModel(
     private val creationsRepository: CreationsRepository,
@@ -33,6 +37,17 @@ class GenerationViewModel(
     private val creationId = MutableStateFlow<String?>(null)
     private var job: Job? = null
 
+    /** Why the last run failed, for the failure screen; null while nothing has. */
+    val failure: StateFlow<GenerationFailure?> =
+        combine(_state, creationId) { state, id ->
+            when {
+                state is UiState.Success && state.data.status == "FAILED" -> state.data.asFailure()
+                state is UiState.Error && id != null -> GenerationFailure.Unconfirmed(id, state.error)
+                state is UiState.Error -> GenerationFailure.NotStarted(state.error)
+                else -> null
+            }
+        }.stateIn(scope, SharingStarted.Eagerly, null)
+
     fun generate(templateId: String, images: List<ByteArray>) {
         lastRequest = templateId to images
         creationId.value = null
@@ -46,8 +61,10 @@ class GenerationViewModel(
 
     fun retry() {
         val id = creationId.value
-        if (id == null) {
-            // The POST /generate itself never succeeded — nothing to poll, so start over.
+        val ranAndFailed = (_state.value as? UiState.Success)?.data?.status == "FAILED"
+        if (id == null || ranAndFailed) {
+            // Nothing started (the POST itself failed), or it ran and FAILED — re-polling that
+            // creation would only return the same failure. Either way only a new generation helps.
             lastRequest?.let { (templateId, images) -> generate(templateId, images) }
             return
         }
