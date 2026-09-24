@@ -1,9 +1,6 @@
 package com.ferbotz.aurapix.core.ui.components
 
-import android.app.Activity
 import android.content.ActivityNotFoundException
-import android.content.Context
-import android.content.ContextWrapper
 import android.content.Intent
 import android.net.Uri
 import androidx.browser.customtabs.CustomTabColorSchemeParams
@@ -14,6 +11,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import co.touchlab.kermit.Logger
+import com.ferbotz.aurapix.core.platform.findActivity
 
 @Composable
 actual fun rememberInAppBrowser(): InAppBrowser {
@@ -38,10 +36,4 @@ actual fun rememberInAppBrowser(): InAppBrowser {
             }
         }
     }
-}
-
-private tailrec fun Context.findActivity(): Activity? = when (this) {
-    is Activity -> this
-    is ContextWrapper -> baseContext.findActivity()
-    else -> null
 }

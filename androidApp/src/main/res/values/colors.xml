@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        Tints a notification's small icon and header: the app's light-theme primary. The core
+        #9267FA is too pale to read on a light notification shade.
+    -->
+    <color name="notification_accent">#5533E0</color>
+</resources>

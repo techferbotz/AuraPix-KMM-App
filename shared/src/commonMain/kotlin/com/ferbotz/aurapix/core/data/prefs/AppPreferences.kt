@@ -58,6 +58,14 @@ class AppPreferences(private val settings: Settings) {
 
     val isLoggedIn: Boolean get() = authToken != null
 
+    /**
+     * Whether the app has shown the system's notification prompt. Per install, like the ids
+     * below: it survives sign-out, so switching accounts never re-asks.
+     */
+    var notificationPermissionAsked: Boolean
+        get() = settings.getBoolean(KEY_NOTIFICATION_PERMISSION_ASKED, false)
+        set(value) = settings.putBoolean(KEY_NOTIFICATION_PERMISSION_ASKED, value)
+
     // -- Per-install identity + remote config cache ---------------------------
     // Both are per INSTALL, not per session: [clearSession] deliberately leaves them alone, so
     // signing out can't throw away a kill switch or move this install into a different
@@ -117,6 +125,7 @@ class AppPreferences(private val settings: Settings) {
         const val KEY_DEVICE_ID = "device_id"
         const val KEY_REMOTE_CONFIG = "remote_config"
         const val KEY_REMOTE_CONFIG_AT = "remote_config_fetched_at"
+        const val KEY_NOTIFICATION_PERMISSION_ASKED = "notification_permission_asked"
         const val DEFAULT_THEME = "dark"
         const val DEFAULT_SUBSCRIPTION = "NONE"
     }

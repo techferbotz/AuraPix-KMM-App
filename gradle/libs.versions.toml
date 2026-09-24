@@ -25,6 +25,12 @@ googleid = "1.2.0"
 revenuecat = "3.2.0"
 androidxStartup = "1.2.0"
 androidxBrowser = "1.8.0"
+# Firebase (Android): the BoM pins Crashlytics + Cloud Messaging; google-services processes
+# androidApp/google-services.json; the Crashlytics plugin injects the build id crash reports are
+# matched on. Latest stable on Google's Maven, checked 2026-09-24.
+firebaseBom = "34.19.0"
+googleServices = "4.5.0"
+firebaseCrashlyticsPlugin = "3.0.8"
 junit = "4.13.2"
 kotlin = "2.4.0"
 coroutines = "1.11.0"
@@ -67,6 +73,10 @@ androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref =
 androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqlite" }
 androidx-startup-runtime = { module = "androidx.startup:startup-runtime", version.ref = "androidxStartup" }
 androidx-browser = { module = "androidx.browser:browser", version.ref = "androidxBrowser" }
+# Firebase (Android) — versions come from the BoM platform
+firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
+firebase-crashlytics = { module = "com.google.firebase:firebase-crashlytics" }
+firebase-messaging = { module = "com.google.firebase:firebase-messaging" }
 multiplatform-settings = { module = "com.russhwolf:multiplatform-settings", version.ref = "multiplatformSettings" }
 multiplatform-settings-no-arg = { module = "com.russhwolf:multiplatform-settings-no-arg", version.ref = "multiplatformSettings" }
 kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
@@ -84,3 +94,5 @@ kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref =
 kotlinxSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 room = { id = "androidx.room", version.ref = "room" }
+googleServices = { id = "com.google.gms.google-services", version.ref = "googleServices" }
+firebaseCrashlytics = { id = "com.google.firebase.crashlytics", version.ref = "firebaseCrashlyticsPlugin" }

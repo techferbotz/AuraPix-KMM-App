@@ -7,6 +7,20 @@ plugins {
     alias(libs.plugins.composeCompiler)
 }
 
+// Firebase (Crashlytics + Cloud Messaging) is configured by `google-services.json` in this module,
+// downloaded from the Firebase console. Without it the build still succeeds and the app runs with
+// Firebase off (no crash reports, no push), so a fresh checkout isn't broken. Both plugins need the
+// file, so they're applied together or not at all.
+if (file("google-services.json").exists()) {
+    apply(plugin = libs.plugins.googleServices.get().pluginId)
+    apply(plugin = libs.plugins.firebaseCrashlytics.get().pluginId)
+} else {
+    logger.warn(
+        "androidApp/google-services.json is missing — Firebase (Crashlytics, push notifications) " +
+            "is off in this build. Download it from the Firebase console; see docs/FIREBASE.md.",
+    )
+}
+
 kotlin {
     compilerOptions {
         jvmTarget = JvmTarget.JVM_11
@@ -16,6 +30,12 @@ dependencies {
     implementation(projects.shared)
 
     implementation(libs.androidx.activity.compose)
+
+    // Firebase: Crashlytics (crash reports) and Cloud Messaging (push). Inert until
+    // google-services.json is added — see above.
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.crashlytics)
+    implementation(libs.firebase.messaging)
 
     implementation(libs.compose.uiToolingPreview)
     debugImplementation(libs.compose.uiTooling)
@@ -49,6 +69,10 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 2
         versionName = "1.0.0"
+        // Crash reports from release builds only: a debug build's crashes are the developer's,
+        // and in the console they'd bury real users' ones. Read by the manifest's
+        // `firebase_crashlytics_collection_enabled`.
+        manifestPlaceholders["crashlyticsCollectionEnabled"] = true
     }
     packaging {
         resources {
@@ -68,6 +92,9 @@ android {
     }
 
     buildTypes {
+        getByName("debug") {
+            manifestPlaceholders["crashlyticsCollectionEnabled"] = false
+        }
         getByName("release") {
             isMinifyEnabled = false
             // Left unsigned when the credentials aren't configured, so a checkout without the

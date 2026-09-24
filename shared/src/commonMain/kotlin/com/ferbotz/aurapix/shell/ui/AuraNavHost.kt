@@ -32,6 +32,7 @@ import com.ferbotz.aurapix.core.config.Store
 import com.ferbotz.aurapix.core.data.remote.ApiError
 import com.ferbotz.aurapix.core.di.DataModule
 import com.ferbotz.aurapix.core.media.rememberImageActions
+import com.ferbotz.aurapix.core.notifications.rememberNotificationPermission
 import com.ferbotz.aurapix.core.ui.components.AuraTab
 import com.ferbotz.aurapix.core.ui.components.AuraTabScaffold
 import com.ferbotz.aurapix.core.ui.components.plainTextClipEntry
@@ -295,6 +296,18 @@ fun AuraNavHost(
             val state by vm.state.collectAsState()
             val data = (state as? UiState.Success)?.data
             val imageActions = rememberImageActions()
+
+            // The one-time ask for push notifications comes the first time a finished portrait is
+            // on screen — once the app has shown what it's for — rather than on first launch.
+            // After that, only Settings asks.
+            val notifications = rememberNotificationPermission()
+            LaunchedEffect(data?.status) {
+                if (data?.status == "COMPLETED" && !notifications.askedBefore && notifications.canAsk) {
+                    delay(1_500) // let the portrait land first
+                    notifications.ask()
+                }
+            }
+
             if (data?.status == "FAILED") {
                 // A failed creation (opened from My Creations) has no image to show — say why
                 // instead (§4.12). Its photos are gone, so trying again starts at the template.
@@ -332,12 +345,18 @@ fun AuraNavHost(
         composable<SettingsRoute> {
             val user = currentUserState()
             val themeMode by DataModule.themeManager.mode.collectAsState()
+            val notifications = rememberNotificationPermission()
             SettingsScreen(
                 name = user.name ?: "",
                 email = user.email ?: "",
                 avatarUrl = user.avatarUrl,
                 signedIn = user.isLoggedIn,
                 supportEmail = links.supportEmail,
+                pushSupported = notifications.isSupported,
+                pushEnabled = notifications.isEnabled,
+                onPushNotifications = {
+                    if (notifications.canAsk) notifications.ask() else notifications.openSettings()
+                },
                 darkTheme = themeMode.isDark,
                 onDarkThemeChange = { DataModule.themeManager.setDark(it) },
                 onBack = { navController.popBackStack() },

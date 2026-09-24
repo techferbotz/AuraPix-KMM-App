@@ -1,3 +1,11 @@
 <resources>
     <string name="app_name">AuraPix</string>
+
+    <!--
+        Push notifications. The channel id is also the manifest's default channel for notifications
+        the system shows while the app is in the background, so there is one place to change it.
+    -->
+    <string name="notification_channel_id" translatable="false">updates</string>
+    <string name="notification_channel_name">Updates</string>
+    <string name="notification_channel_description">New styles, offers and news from AuraPix.</string>
 </resources>

@@ -12,8 +12,15 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.lifecycleScope
 import com.ferbotz.aurapix.core.di.DataModule
+import com.ferbotz.aurapix.push.PushNotifications
 import com.ferbotz.aurapix.shell.ui.DeepLinks
+import com.google.firebase.FirebaseApp
+import com.google.firebase.crashlytics.FirebaseCrashlytics
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -27,8 +34,12 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         // Configure RevenueCat here (Android-only) with the backend user id, if signed in.
         DataModule.paymentManager.configure(DataModule.preferences.userId)
-        // Prime the deep link bus before composing so the NavHost picks it up on first frame.
-        handleDeepLink(intent)
+        // A cold start from a shared link or a tapped notification: prime the deep link bus before
+        // composing so the NavHost picks it up on first frame. Only on a fresh start — an activity
+        // recreated after process death gets the same intent again, and its restored back stack
+        // already shows the link, so handling it twice would push the screen a second time.
+        if (savedInstanceState == null) handleDeepLink(intent)
+        tagCrashReportsWithAccount()
         setContent {
             val themeMode by DataModule.themeManager.mode.collectAsState()
             LaunchedEffect(themeMode) { applySystemBarStyle(themeMode.isDark) }
@@ -53,7 +64,30 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleDeepLink(intent: Intent?) {
-        intent?.data?.toString()?.let { DeepLinks.handleUrl(it) }
+        intent?.let(::linkOf)?.let { DeepLinks.handleUrl(it) }
+    }
+
+    /**
+     * The link an intent carries: the URL of a tapped App Link, or the `link` a tapped push
+     * notification carries — FCM hands a background notification's data to this activity as
+     * extras, and [PushNotifications] builds foreground ones the same way.
+     */
+    private fun linkOf(intent: Intent): String? =
+        intent.data?.toString()
+            ?: intent.getStringExtra(PushNotifications.EXTRA_LINK)?.takeIf { it.isNotBlank() }
+
+    /**
+     * Crash reports carry the signed-in account's id — an opaque uuid, never the email or name —
+     * so a user's report to support can be matched to their crashes. Cleared on sign-out.
+     */
+    private fun tagCrashReportsWithAccount() {
+        if (FirebaseApp.getApps(this).isEmpty()) return
+        val crashlytics = FirebaseCrashlytics.getInstance()
+        lifecycleScope.launch {
+            DataModule.userManager.state.map { it.id }.distinctUntilChanged().collect { id ->
+                crashlytics.setUserId(id.orEmpty())
+            }
+        }
     }
 }
 

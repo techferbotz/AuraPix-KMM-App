@@ -22,10 +22,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -56,6 +52,11 @@ fun SettingsScreen(
     supportEmail: String = "",
     darkTheme: Boolean = true,
     onDarkThemeChange: (Boolean) -> Unit = {},
+    /** False where push isn't set up (iOS today): the Notifications section is left out. */
+    pushSupported: Boolean = true,
+    /** The system's own answer — permission granted and not switched off in Settings. */
+    pushEnabled: Boolean = false,
+    onPushNotifications: () -> Unit = {},
     onBack: () -> Unit = {},
     onPrivacyPolicy: () -> Unit = {},
     onTerms: () -> Unit = {},
@@ -64,8 +65,6 @@ fun SettingsScreen(
     /** Null hides the Delete Account row. */
     onDeleteAccount: (() -> Unit)? = null,
 ) {
-    var pushNotifications by remember { mutableStateOf(true) }
-
     Scaffold(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.background,
@@ -122,12 +121,17 @@ fun SettingsScreen(
                 )
             }
 
-            SettingsSection("Notifications") {
-                AuraListRow(
-                    "Push Notifications",
-                    leadingIcon = Icons.Rounded.NotificationsActive,
-                    trailing = { AuraToggle(pushNotifications, { pushNotifications = it }) },
-                )
+            // The switch mirrors the system's; the app can't flip that itself, so a tap asks for
+            // the permission, or opens the system settings where notifications are turned on or off.
+            if (pushSupported) {
+                SettingsSection("Notifications") {
+                    AuraListRow(
+                        "Push Notifications",
+                        leadingIcon = Icons.Rounded.NotificationsActive,
+                        trailing = { AuraToggle(pushEnabled, { onPushNotifications() }) },
+                        onClick = onPushNotifications,
+                    )
+                }
             }
 
             SettingsSection("Preferences") {
