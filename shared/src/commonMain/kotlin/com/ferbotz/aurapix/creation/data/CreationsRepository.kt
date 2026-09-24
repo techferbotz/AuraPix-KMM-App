@@ -103,6 +103,9 @@ class CreationsRepository(
     }.flowOn(Dispatchers.Default)
 
     suspend fun deleteCreation(id: String) = dao.deleteById(id)
+
+    /** Drops every cached creation — for when the account that owned them has been deleted. */
+    suspend fun clearCache() = dao.clear()
 }
 
 private fun CreationDto.toEntity() = CreationEntity(

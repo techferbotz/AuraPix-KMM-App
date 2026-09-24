@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import com.ferbotz.aurapix.core.auth.rememberGoogleAuthProvider
 import com.ferbotz.aurapix.core.di.DataModule
 import com.ferbotz.aurapix.core.ui.components.BrandLogo
+import com.ferbotz.aurapix.core.ui.components.LegalConsentLine
 
 /**
  * Self-contained login gate: a modal sheet with Google sign-in. Reuses [LoginViewModel] + the
@@ -36,8 +37,6 @@ fun LoginBottomSheet(
     onDismiss: () -> Unit,
     onLoggedIn: () -> Unit,
     modifier: Modifier = Modifier,
-    onPrivacyPolicy: () -> Unit = {},
-    onTerms: () -> Unit = {},
 ) {
     val vm = remember { LoginViewModel(DataModule.authRepository, DataModule.userManager) }
     DisposableEffect(Unit) { onDispose { vm.onCleared() } }
@@ -85,7 +84,7 @@ fun LoginBottomSheet(
                 loading = loginState is LoginUiState.Loading,
             )
             LoginErrorSlot((loginState as? LoginUiState.Error)?.message)
-            LegalFooter(onPrivacyPolicy = onPrivacyPolicy, onTerms = onTerms)
+            LegalConsentLine()
         }
     }
 }

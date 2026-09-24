@@ -1,6 +1,8 @@
 package com.ferbotz.aurapix.profile.data
 
 import com.ferbotz.aurapix.core.data.prefs.AppPreferences
+import com.ferbotz.aurapix.core.data.remote.ApiError
+import com.ferbotz.aurapix.core.data.remote.asApiError
 import com.ferbotz.aurapix.core.session.UserState
 import com.ferbotz.aurapix.profile.data.dto.UserSummaryDto
 import kotlinx.coroutines.CoroutineScope
@@ -62,6 +64,32 @@ class UserManager(
     fun logout() {
         prefs.clearSession()
         _state.value = UserState()
+    }
+
+    /**
+     * Permanently deletes the signed-in account (`DELETE /delete-account`, §4.2a). There is no
+     * undo, so the caller confirms with the user first.
+     *
+     * Unless the call [failed][AccountDeletion.Failed], the session is dropped exactly as [logout]
+     * drops it: the stored token no longer opens an account, whichever way it ended. Either 401
+     * will usually have dropped it already in the HTTP layer (BE-008); this doesn't rely on that.
+     */
+    suspend fun deleteAccount(): AccountDeletion {
+        // The contract assumes a token is always sent. Without one the server answers 401
+        // UNAUTHORIZED, which reads as "already deleted" — the one answer that would be a lie.
+        if (!prefs.isLoggedIn) return AccountDeletion.SignInRequired
+        val outcome = profileRemote.deleteAccount().fold(
+            onSuccess = { AccountDeletion.Deleted },
+            onFailure = {
+                when (val error = it.asApiError()) {
+                    ApiError.Unauthorized -> AccountDeletion.Deleted
+                    ApiError.InvalidToken -> AccountDeletion.SignInRequired
+                    else -> AccountDeletion.Failed(error)
+                }
+            },
+        )
+        if (outcome !is AccountDeletion.Failed) logout()
+        return outcome
     }
 
     /** Apply fresh balances from a billing verify response (avoids an extra /profile round-trip). */

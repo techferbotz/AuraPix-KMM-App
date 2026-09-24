@@ -12,6 +12,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -23,6 +24,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalUriHandler
 import com.ferbotz.aurapix.core.auth.rememberGoogleAuthProvider
 import com.ferbotz.aurapix.core.config.LocalRemoteConfig
@@ -32,7 +34,8 @@ import com.ferbotz.aurapix.core.di.DataModule
 import com.ferbotz.aurapix.core.media.rememberImageActions
 import com.ferbotz.aurapix.core.ui.components.AuraTab
 import com.ferbotz.aurapix.core.ui.components.AuraTabScaffold
-import com.ferbotz.aurapix.core.ui.components.WebViewScreen
+import com.ferbotz.aurapix.core.ui.components.plainTextClipEntry
+import com.ferbotz.aurapix.core.ui.components.rememberInAppBrowser
 import com.ferbotz.aurapix.billing.ui.CreditsSuccessScreen
 import com.ferbotz.aurapix.billing.ui.BillingViewModel
 import com.ferbotz.aurapix.billing.ui.PaywallHost
@@ -45,6 +48,10 @@ import com.ferbotz.aurapix.feed.ui.FeedSectionKind
 import com.ferbotz.aurapix.feed.ui.HomeFeedScreen
 import com.ferbotz.aurapix.feed.ui.TrayListingScreen
 import com.ferbotz.aurapix.feed.ui.TrayListingViewModel
+import com.ferbotz.aurapix.profile.ui.AccountDeletedScreen
+import com.ferbotz.aurapix.profile.ui.DeleteAccountScreen
+import com.ferbotz.aurapix.profile.ui.DeleteAccountStep
+import com.ferbotz.aurapix.profile.ui.DeleteAccountViewModel
 import com.ferbotz.aurapix.profile.ui.LoginBottomSheet
 import com.ferbotz.aurapix.profile.ui.LoginScreen
 import com.ferbotz.aurapix.billing.ui.PremiumPlansScreen
@@ -65,6 +72,7 @@ import com.ferbotz.aurapix.profile.ui.ProfileViewModel
 import com.ferbotz.aurapix.template.ui.TemplateDetailViewModel
 import com.ferbotz.aurapix.core.ui.base.UiState
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 private const val TEMPLATE_SHARE_BASE = "https://aurapix.ferbotz.com/template/"
 
@@ -77,9 +85,25 @@ fun AuraNavHost(
     // app quietly becomes a guest wherever the user is, rather than carrying on as signed in.
     LaunchedEffect(auth) { auth.observeSession() }
 
-    // Legal URLs are served by GET /config so the pages can move without a release (BE-005).
+    // Legal URLs are served by GET /config so the pages can move without a release (BE-005), and
+    // open in the in-app browser (API.md §4.17b).
     val links = LocalRemoteConfig.current.links
+    val browser = rememberInAppBrowser()
     val uriHandler = LocalUriHandler.current
+    val clipboard = LocalClipboard.current
+    val scope = rememberCoroutineScope()
+
+    // Links that belong to another app — Play's subscription screen. On Android a device with
+    // nothing to handle one throws instead of doing nothing, so never let that reach the user.
+    val openExternally: (String) -> Unit = { url -> runCatching { uriHandler.openUri(url) } }
+
+    // With no mail app installed there's nowhere to send a mailto:, so leave the address on the
+    // clipboard instead. Settings prints it under the row as well.
+    val contactSupport: () -> Unit = {
+        runCatching { uriHandler.openUri("mailto:${links.supportEmail}") }.onFailure {
+            scope.launch { clipboard.setClipEntry(plainTextClipEntry("AuraPix support", links.supportEmail)) }
+        }
+    }
 
     // Shared across TemplateDetail → Processing → Result/Failed so the generation survives navigation.
     val generationVm = remember { GenerationViewModel(DataModule.creationsRepository) }
@@ -288,16 +312,79 @@ fun AuraNavHost(
                 name = user.name ?: "",
                 email = user.email ?: "",
                 avatarUrl = user.avatarUrl,
+                signedIn = user.isLoggedIn,
+                supportEmail = links.supportEmail,
                 darkTheme = themeMode.isDark,
                 onDarkThemeChange = { DataModule.themeManager.setDark(it) },
                 onBack = { navController.popBackStack() },
-                onPrivacyPolicy = { navController.navigate(WebViewRoute(links.privacyPolicy, "Privacy Policy")) },
-                onTerms = { navController.navigate(WebViewRoute(links.terms, "Terms of Service")) },
+                onPrivacyPolicy = { browser.open(links.privacyPolicy) },
+                onTerms = { browser.open(links.terms) },
+                onContactSupport = contactSupport,
                 onLogout = {
                     auth.logout()
                     DataModule.paymentManager.onLoggedOut()
                     navController.popBackStack(HomeRoute, inclusive = false)
                 },
+                // Delete Account is hidden for now, so nothing links to DeleteAccountRoute. To
+                // bring it back: onDeleteAccount = { navController.navigate(DeleteAccountRoute) }
+            )
+        }
+
+        composable<DeleteAccountRoute> {
+            val user = currentUserState()
+            val vm = remember {
+                DeleteAccountViewModel(
+                    DataModule.userManager,
+                    DataModule.subscriptionsRepository,
+                    DataModule.creationsRepository,
+                    DataModule.paymentManager,
+                )
+            }
+            DisposableEffect(Unit) { onDispose { vm.onCleared() } }
+            val state by vm.state.collectAsState()
+            var signingIn by remember { mutableStateOf(false) }
+
+            // Settings and this screen belong to an account that no longer exists: drop both, so
+            // Back from the confirmation lands on Home as a guest.
+            LaunchedEffect(state.step) {
+                if (state.step == DeleteAccountStep.Deleted) {
+                    navController.navigate(AccountDeletedRoute(state.manageSubscriptionUrl)) {
+                        popUpTo(HomeRoute) { inclusive = false }
+                    }
+                }
+            }
+
+            DeleteAccountScreen(
+                email = user.email,
+                gems = user.credits,
+                signedIn = user.isLoggedIn,
+                state = state,
+                onBack = { navController.popBackStack() },
+                onDelete = { vm.delete() },
+                onSignIn = { signingIn = true },
+                onWhatGetsDeleted = { browser.open(links.deleteAccount) },
+                onManageSubscription = { state.manageSubscriptionUrl?.let(openExternally) },
+            )
+
+            if (signingIn) {
+                LoginBottomSheet(
+                    onDismiss = { signingIn = false },
+                    onLoggedIn = {
+                        signingIn = false
+                        auth.onLoginSuccess()
+                        DataModule.userManager.current.id?.let { DataModule.paymentManager.identify(it) }
+                        vm.onSignedIn()
+                    },
+                )
+            }
+        }
+
+        composable<AccountDeletedRoute> { entry ->
+            val route = entry.toRoute<AccountDeletedRoute>()
+            AccountDeletedScreen(
+                subscriptionStillBilling = route.manageSubscriptionUrl != null,
+                onManageSubscription = { route.manageSubscriptionUrl?.let(openExternally) },
+                onDone = { navController.popBackStack(HomeRoute, inclusive = false) },
             )
         }
 
@@ -384,13 +471,8 @@ fun AuraNavHost(
         composable<HelpRoute> {
             HelpFaqScreen(
                 onBack = { navController.popBackStack() },
-                onContactSupport = { uriHandler.openUri("mailto:${links.supportEmail}") },
+                onContactSupport = contactSupport,
             )
-        }
-
-        composable<WebViewRoute> { entry ->
-            val route = entry.toRoute<WebViewRoute>()
-            WebViewScreen(url = route.url, title = route.title, onBack = { navController.popBackStack() })
         }
     }
 }
@@ -413,6 +495,7 @@ private fun HomeContainer(navController: NavHostController, auth: AuthState) {
     // Read here rather than inside a callback: composition locals can only be read in a
     // @Composable context, and the tab callbacks below are plain lambdas.
     val links = LocalRemoteConfig.current.links
+    val browser = rememberInAppBrowser()
 
     when (tab) {
         AuraTab.Feed -> {
@@ -461,7 +544,7 @@ private fun HomeContainer(navController: NavHostController, auth: AuthState) {
                 onUpgrade = { navController.navigate(PremiumPlansRoute) },
                 onPurchaseCredits = { navController.navigate(PurchaseCreditsRoute) },
                 onOpenSettings = { navController.navigate(SettingsRoute) },
-                onPrivacyPolicy = { navController.navigate(WebViewRoute(links.privacyPolicy, "Privacy Policy")) },
+                onPrivacyPolicy = { browser.open(links.privacyPolicy) },
                 onRetry = { vm.refresh() },
                 onLogout = {
                     vm.logout()

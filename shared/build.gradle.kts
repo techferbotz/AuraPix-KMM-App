@@ -53,6 +53,8 @@ kotlin {
             implementation(libs.androidx.credentials)
             implementation(libs.androidx.credentials.playServicesAuth)
             implementation(libs.google.identity.googleid)
+            // Custom Tabs — the in-app browser for the legal pages (API.md §4.17b)
+            implementation(libs.androidx.browser)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)

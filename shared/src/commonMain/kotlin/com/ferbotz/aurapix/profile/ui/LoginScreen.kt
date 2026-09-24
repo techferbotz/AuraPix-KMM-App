@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import com.ferbotz.aurapix.core.ui.components.AmbientGlow
 import com.ferbotz.aurapix.core.ui.components.AuraWordmark
 import com.ferbotz.aurapix.core.ui.components.BrandLogo
+import com.ferbotz.aurapix.core.ui.components.LegalConsentLine
 import com.ferbotz.aurapix.core.ui.theme.AuraPixTheme
 
 /**
@@ -42,8 +43,6 @@ fun LoginScreen(
     loading: Boolean = false,
     errorMessage: String? = null,
     onGoogleSignIn: () -> Unit = {},
-    onPrivacyPolicy: () -> Unit = {},
-    onTerms: () -> Unit = {},
 ) {
     Box(
         modifier = modifier
@@ -89,7 +88,7 @@ fun LoginScreen(
             ) {
                 GoogleSignInButton(onClick = onGoogleSignIn, loading = loading)
                 LoginErrorSlot(errorMessage)
-                LegalFooter(onPrivacyPolicy = onPrivacyPolicy, onTerms = onTerms)
+                LegalConsentLine()
             }
         }
     }

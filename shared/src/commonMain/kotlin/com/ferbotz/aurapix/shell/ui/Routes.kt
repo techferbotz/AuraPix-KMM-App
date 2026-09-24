@@ -46,5 +46,13 @@ object SubscriptionSuccessRoute
 @Serializable
 object HelpRoute
 
+/** Settings → Delete Account: the confirmation the public deletion page describes (API.md §4.2a). */
 @Serializable
-data class WebViewRoute(val url: String, val title: String)
+object DeleteAccountRoute
+
+/**
+ * After a deletion. [manageSubscriptionUrl] is set when the user had an active subscription,
+ * which the deletion did not cancel.
+ */
+@Serializable
+data class AccountDeletedRoute(val manageSubscriptionUrl: String? = null)

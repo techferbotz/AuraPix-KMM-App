@@ -35,6 +35,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.ferbotz.aurapix.billing.data.RcPackage
+import com.ferbotz.aurapix.core.ui.components.LegalLinksLine
 import com.ferbotz.aurapix.core.ui.components.PrimaryButton
 import com.ferbotz.aurapix.core.ui.components.SecondaryButton
 import com.ferbotz.aurapix.core.ui.components.StatusBadge
@@ -202,6 +203,9 @@ private fun PaywallSheetContent(
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
+                        // The offering can include the Premium subscription, so this sheet is a
+                        // subscription purchase screen as far as store review is concerned.
+                        LegalLinksLine()
                     }
                 }
             }

@@ -16,13 +16,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.LinkAnnotation
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.TextLinkStyles
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.text.withLink
 import androidx.compose.ui.unit.dp
 import com.ferbotz.aurapix.core.config.LocalRemoteConfig
 import com.ferbotz.aurapix.core.ui.components.PrimaryButton
@@ -30,7 +24,8 @@ import com.ferbotz.aurapix.core.ui.theme.AuraTheme
 
 /**
  * Shared pieces of the two sign-in surfaces (full-screen [LoginScreen] and the modal
- * [LoginBottomSheet]) so the two never drift apart.
+ * [LoginBottomSheet]) so the two never drift apart. Their consent line is
+ * [com.ferbotz.aurapix.core.ui.components.LegalConsentLine], shared with the rest of the app.
  */
 
 /**
@@ -102,39 +97,4 @@ fun LoginErrorSlot(message: String?, modifier: Modifier = Modifier) {
             }
         }
     }
-}
-
-/**
- * Footer legal line with tappable Privacy Policy / Terms of Service links, tinted `secondary`
- * and underlined so they read as links against the muted body copy.
- */
-@Composable
-fun LegalFooter(
-    onPrivacyPolicy: () -> Unit,
-    onTerms: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val linkStyles = TextLinkStyles(
-        style = SpanStyle(
-            color = MaterialTheme.colorScheme.secondary,
-            textDecoration = TextDecoration.Underline,
-        ),
-    )
-    Text(
-        text = buildAnnotatedString {
-            append("By continuing you agree to our ")
-            withLink(LinkAnnotation.Clickable("privacy", linkStyles) { onPrivacyPolicy() }) {
-                append("Privacy Policy")
-            }
-            append(" and ")
-            withLink(LinkAnnotation.Clickable("terms", linkStyles) { onTerms() }) {
-                append("Terms of Service")
-            }
-            append(".")
-        },
-        style = MaterialTheme.typography.labelSmall,
-        color = AuraTheme.colors.muted,
-        textAlign = TextAlign.Center,
-        modifier = modifier.fillMaxWidth(),
-    )
 }

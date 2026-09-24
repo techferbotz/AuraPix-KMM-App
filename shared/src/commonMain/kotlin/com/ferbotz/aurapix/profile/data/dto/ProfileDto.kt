@@ -34,6 +34,13 @@ data class CreditsDto(
     val totalCredits: Int,
 )
 
+/** §4.2a — returned once the account and everything in it is gone. */
+@Serializable
+data class DeleteAccountDto(
+    val deleted: Boolean,
+    val deletedAt: String? = null,
+)
+
 /** Subscription snapshot embedded in the profile response. */
 @Serializable
 data class SubscriptionDto(

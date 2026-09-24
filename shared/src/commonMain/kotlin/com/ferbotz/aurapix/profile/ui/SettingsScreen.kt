@@ -13,8 +13,10 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.Logout
 import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.DarkMode
+import androidx.compose.material.icons.rounded.DeleteForever
 import androidx.compose.material.icons.rounded.LightMode
 import androidx.compose.material.icons.rounded.NotificationsActive
+import androidx.compose.material.icons.rounded.SupportAgent
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -40,6 +42,9 @@ import com.ferbotz.aurapix.core.ui.theme.AuraPixTheme
  * App & account settings, grouped into glass sections. Account is driven by the real user, and
  * [darkTheme] by `ThemeManager` — the switch here is the only way to change the app's appearance,
  * since the theme deliberately ignores the device's night setting.
+ *
+ * Carries the house set of legal entries (API.md §4.17b): Privacy Policy, Terms & Conditions,
+ * Contact support, and — signed in, and only when [onDeleteAccount] is given — Delete Account.
  */
 @Composable
 fun SettingsScreen(
@@ -47,12 +52,17 @@ fun SettingsScreen(
     name: String = "",
     email: String = "",
     avatarUrl: String? = null,
+    signedIn: Boolean = true,
+    supportEmail: String = "",
     darkTheme: Boolean = true,
     onDarkThemeChange: (Boolean) -> Unit = {},
     onBack: () -> Unit = {},
     onPrivacyPolicy: () -> Unit = {},
     onTerms: () -> Unit = {},
+    onContactSupport: () -> Unit = {},
     onLogout: () -> Unit = {},
+    /** Null hides the Delete Account row. */
+    onDeleteAccount: (() -> Unit)? = null,
 ) {
     var pushNotifications by remember { mutableStateOf(true) }
 
@@ -89,6 +99,18 @@ fun SettingsScreen(
                     tint = MaterialTheme.colorScheme.error,
                     onClick = onLogout,
                 )
+                // Shown only when the caller passes [onDeleteAccount]; today it doesn't, so the row
+                // is hidden. Play expects an in-app deletion path for apps with accounts, and the
+                // public deletion page names this row — Profile tab → Settings → Delete Account →
+                // Delete — so keep the label as is when it comes back (§4.2a).
+                if (signedIn && onDeleteAccount != null) {
+                    AuraListRow(
+                        "Delete Account",
+                        leadingIcon = Icons.Rounded.DeleteForever,
+                        tint = MaterialTheme.colorScheme.error,
+                        onClick = onDeleteAccount,
+                    )
+                }
             }
 
             SettingsSection("Appearance") {
@@ -118,13 +140,19 @@ fun SettingsScreen(
                 )
             }
 
-            SettingsSection("Legal") {
-                AuraListRow("Privacy Policy", onClick = onPrivacyPolicy)
+            SettingsSection("Support") {
                 AuraListRow(
-                    "Terms of Service",
-                    trailing = { Icon(Icons.AutoMirrored.Rounded.OpenInNew, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
-                    onClick = onTerms,
+                    "Contact support",
+                    subtitle = supportEmail.ifBlank { null },
+                    leadingIcon = Icons.Rounded.SupportAgent,
+                    trailing = { OpensOutside() },
+                    onClick = onContactSupport,
                 )
+            }
+
+            SettingsSection("Legal") {
+                AuraListRow("Privacy Policy", trailing = { OpensOutside() }, onClick = onPrivacyPolicy)
+                AuraListRow("Terms & Conditions", trailing = { OpensOutside() }, onClick = onTerms)
             }
 
             SettingsSection("About") {
@@ -135,6 +163,12 @@ fun SettingsScreen(
             }
         }
     }
+}
+
+/** Trailing mark for a row that leaves the screen for a browser tab or the mail app. */
+@Composable
+private fun OpensOutside() {
+    Icon(Icons.AutoMirrored.Rounded.OpenInNew, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
 }
 
 @Composable
@@ -151,7 +185,7 @@ private fun SettingsSection(title: String, content: @Composable () -> Unit) {
 @Composable
 private fun SettingsScreenLightPreview() {
     AuraPixTheme(darkTheme = false) {
-        SettingsScreen(name = "Julian Vane", email = "julian.vane@gmail.com", darkTheme = false)
+        SettingsScreen(name = "Julian Vane", email = "julian.vane@gmail.com", supportEmail = "support@ferbotz.com", darkTheme = false)
     }
 }
 
@@ -159,6 +193,6 @@ private fun SettingsScreenLightPreview() {
 @Composable
 private fun SettingsScreenDarkPreview() {
     AuraPixTheme(darkTheme = true) {
-        SettingsScreen(name = "Julian Vane", email = "julian.vane@gmail.com", darkTheme = true)
+        SettingsScreen(name = "Julian Vane", email = "julian.vane@gmail.com", supportEmail = "support@ferbotz.com", darkTheme = true)
     }
 }

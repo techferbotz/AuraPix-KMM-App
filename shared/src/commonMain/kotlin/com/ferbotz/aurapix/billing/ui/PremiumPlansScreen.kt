@@ -32,6 +32,7 @@ import com.ferbotz.aurapix.core.config.Store
 import com.ferbotz.aurapix.core.ui.components.AmbientGlow
 import com.ferbotz.aurapix.core.ui.components.AuraIconButton
 import com.ferbotz.aurapix.core.ui.components.AuraTopBar
+import com.ferbotz.aurapix.core.ui.components.LegalLinksLine
 import com.ferbotz.aurapix.core.ui.components.PricingCard
 import com.ferbotz.aurapix.core.ui.theme.AuraPixTheme
 import com.ferbotz.aurapix.core.ui.theme.AuraTheme
@@ -129,6 +130,8 @@ fun PremiumPlansScreen(
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth(),
                     )
+                    // An auto-renewing subscription: Apple rejects the build without these here.
+                    LegalLinksLine()
                 }
 
                 else -> BillingMessage(error ?: "No plans available right now.", onRetry)

@@ -39,6 +39,7 @@ import com.ferbotz.aurapix.core.config.Store
 import com.ferbotz.aurapix.core.ui.components.AuraIconButton
 import com.ferbotz.aurapix.core.ui.components.AuraTopBar
 import com.ferbotz.aurapix.core.ui.components.CreditsBadge
+import com.ferbotz.aurapix.core.ui.components.LegalLinksLine
 import com.ferbotz.aurapix.core.ui.components.PrimaryButton
 import com.ferbotz.aurapix.core.ui.components.StatusBadge
 import com.ferbotz.aurapix.core.ui.theme.AuraPixTheme
@@ -108,6 +109,7 @@ fun PurchaseCreditsScreen(
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }
+                    LegalLinksLine()
                 }
             }
         },
