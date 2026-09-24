@@ -8,6 +8,10 @@ object SplashRoute
 @Serializable
 object HomeRoute
 
+/**
+ * [templateId] is the id from every in-app entry point, but a deep link may carry the slug
+ * instead (§4.9a) — act on the loaded template's own id, not on this.
+ */
 @Serializable
 data class TemplateDetailRoute(val templateId: String, val title: String)
 

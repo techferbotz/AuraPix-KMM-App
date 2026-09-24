@@ -167,6 +167,9 @@ fun AuraNavHost(
             DisposableEffect(Unit) { onDispose { vm.onCleared() } }
             LaunchedEffect(route.templateId) { vm.load(route.templateId) }
             val state by vm.templateState.collectAsState()
+            // A link can open this screen with the template's slug instead of its id (§4.9a).
+            // Generating needs the id, and the loaded template carries it either way.
+            val templateId = (state as? UiState.Success)?.data?.id ?: route.templateId
 
             val userManager = DataModule.userManager
             val store = LocalRemoteConfig.current.store
@@ -177,7 +180,7 @@ fun AuraNavHost(
             var paywallImages by remember { mutableStateOf<List<ByteArray>?>(null) }
 
             val startGeneration: (List<ByteArray>) -> Unit = { images ->
-                generationVm.generate(route.templateId, images)
+                generationVm.generate(templateId, images)
                 navController.navigate(ProcessingRoute)
             }
 
@@ -187,7 +190,7 @@ fun AuraNavHost(
                 state = state,
                 generationCost = cost,
                 onBack = { navController.popBackStack() },
-                onShare = { imageActions.shareLink("$TEMPLATE_SHARE_BASE${route.templateId}") },
+                onShare = { imageActions.shareLink("$TEMPLATE_SHARE_BASE$templateId") },
                 onGenerate = { images ->
                     when {
                         !auth.isLoggedIn -> loginImages = images

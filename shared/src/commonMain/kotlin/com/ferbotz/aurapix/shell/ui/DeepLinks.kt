@@ -7,6 +7,9 @@ import kotlinx.coroutines.flow.StateFlow
  * Cross-platform holder for an incoming deep link. Each platform's entry point
  * ([MainActivity] on Android, `onOpenURL` on iOS) parses the opened URL into this
  * bus, and [AuraNavHost] observes it to navigate to the target screen.
+ *
+ * The link's last segment is the template's id or its slug — the site serves both forms — and
+ * the template screen resolves either (§4.9a).
  */
 object DeepLinks {
     private val _pendingTemplateId = MutableStateFlow<String?>(null)

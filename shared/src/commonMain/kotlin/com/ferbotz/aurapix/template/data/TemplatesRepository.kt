@@ -10,11 +10,21 @@ import kotlinx.coroutines.flow.flowOn
 
 class TemplatesRepository(private val remote: TemplateRemoteDataSource) {
 
-    fun getTemplate(id: String): Flow<DataState<TemplateDetailDto>> = flow {
+    /**
+     * A template by [ref]: its id, or — when the screen was opened from a link — possibly its
+     * slug, since `https://aurapix.ferbotz.com/template/…` is shared in both forms (§4.9a). Every
+     * id is a UUID (§2), so anything else is looked up as a slug.
+     */
+    fun getTemplate(ref: String): Flow<DataState<TemplateDetailDto>> = flow {
         emit(DataState.Loading)
-        remote.getTemplate(id).fold(
+        val result = if (UUID.matches(ref)) remote.getTemplate(ref) else remote.getTemplateBySlug(ref)
+        result.fold(
             onSuccess = { emit(DataState.Success(it)) },
             onFailure = { emit(DataState.Error(it.asApiError())) },
         )
     }.flowOn(Dispatchers.Default)
+
+    private companion object {
+        val UUID = Regex("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")
+    }
 }
