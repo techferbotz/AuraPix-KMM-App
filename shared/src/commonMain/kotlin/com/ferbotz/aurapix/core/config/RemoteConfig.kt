@@ -39,6 +39,8 @@ data class RemoteConfig(
         val creations: Boolean = true,
         /** Category browsing. */
         val categories: Boolean = true,
+        /** The "Get prompt" button on a template, which shows the prompt for use in other apps. */
+        val promptSharing: Boolean = true,
     )
 
     /**

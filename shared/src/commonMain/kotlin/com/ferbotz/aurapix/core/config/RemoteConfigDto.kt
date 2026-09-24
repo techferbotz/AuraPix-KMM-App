@@ -76,6 +76,7 @@ data class FeaturesDto(
     val creditPurchase: Boolean? = null,
     val creations: Boolean? = null,
     val categories: Boolean? = null,
+    val promptSharing: Boolean? = null,
 )
 
 @Serializable

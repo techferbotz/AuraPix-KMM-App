@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -22,6 +23,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.Notes
 import androidx.compose.material.icons.rounded.AddAPhoto
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Close
@@ -37,6 +39,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,12 +60,16 @@ import com.ferbotz.aurapix.core.ui.components.CategoryChip
 import com.ferbotz.aurapix.core.ui.components.GlassCard
 import com.ferbotz.aurapix.core.ui.components.NetworkImage
 import com.ferbotz.aurapix.core.ui.components.PrimaryButton
+import com.ferbotz.aurapix.core.ui.components.SecondaryButton
 import com.ferbotz.aurapix.core.ui.components.StatusBadge
 import com.ferbotz.aurapix.core.ui.theme.AuraPixTheme
 import com.ferbotz.aurapix.core.ui.theme.AuraShapes
 import com.ferbotz.aurapix.core.ui.theme.AuraTheme
 
-/** Template detail: hero, categories, description, in-place photo upload and an Examples strip. */
+/**
+ * Template detail: hero, categories, description, in-place photo upload and an Examples strip.
+ * The sticky bar holds Generate and, under it, "Get prompt", which opens [PromptBottomSheet].
+ */
 @Composable
 fun TemplateDetailScreen(
     modifier: Modifier = Modifier,
@@ -73,7 +80,8 @@ fun TemplateDetailScreen(
     onGenerate: (List<ByteArray>) -> Unit = {},
     onRetry: () -> Unit = {},
 ) {
-    val slotCount = (state as? UiState.Success)?.data?.slots?.size ?: 0
+    val detail = (state as? UiState.Success)?.data
+    val slotCount = detail?.slots?.size ?: 0
 
     // One picked-image slot per template imageSlot; re-initialised when the template changes.
     val images = remember { mutableStateListOf<ByteArray?>() }
@@ -100,17 +108,16 @@ fun TemplateDetailScreen(
         }
     }
 
+    // Each action has its own kill switch, and a template with no prompt simply has no "Get prompt".
+    val features = LocalRemoteConfig.current.features
+    val prompt = detail?.prompt?.takeIf { features.promptSharing }
+    var showPrompt by rememberSaveable { mutableStateOf(false) }
+
     Scaffold(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
-            if (state is UiState.Success && LocalRemoteConfig.current.features.imageGeneration) {
-                val filled = images.count { it != null }
-                // A template asking for more photos than the server accepts can never succeed —
-                // say so rather than letting the user fill every slot and be rejected.
-                val withinCap = slotCount <= limits.maxImagesPerRequest
-                val ready = slotCount > 0 && filled == slotCount && withinCap
-                val remaining = slotCount - filled
+            if (detail != null && (features.imageGeneration || prompt != null)) {
                 Column(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background).navigationBarsPadding().padding(16.dp)) {
                     rejection?.let {
                         Text(
@@ -120,17 +127,36 @@ fun TemplateDetailScreen(
                             modifier = Modifier.padding(bottom = 8.dp),
                         )
                     }
-                    PrimaryButton(
-                        text = when {
-                            !withinCap -> "Unavailable on this version"
-                            ready -> "Generate · $generationCost gems"
-                            else -> "Add $remaining more photo${if (remaining == 1) "" else "s"}"
-                        },
-                        onClick = { onGenerate(images.filterNotNull()) },
-                        enabled = ready,
-                        modifier = Modifier.fillMaxWidth(),
-                        leadingIcon = Icons.Rounded.AutoAwesome,
-                    )
+                    if (features.imageGeneration) {
+                        val filled = images.count { it != null }
+                        // A template asking for more photos than the server accepts can never succeed —
+                        // say so rather than letting the user fill every slot and be rejected.
+                        val withinCap = slotCount <= limits.maxImagesPerRequest
+                        val ready = slotCount > 0 && filled == slotCount && withinCap
+                        val remaining = slotCount - filled
+                        PrimaryButton(
+                            text = when {
+                                !withinCap -> "Unavailable on this version"
+                                ready -> "Generate · $generationCost gems"
+                                else -> "Add $remaining more photo${if (remaining == 1) "" else "s"}"
+                            },
+                            onClick = { onGenerate(images.filterNotNull()) },
+                            enabled = ready,
+                            modifier = Modifier.fillMaxWidth(),
+                            leadingIcon = Icons.Rounded.AutoAwesome,
+                        )
+                    }
+                    if (prompt != null) {
+                        // Stacked under Generate rather than beside it. Both stay full width, and
+                        // Generate keeps the lead spot.
+                        if (features.imageGeneration) Spacer(Modifier.height(12.dp))
+                        SecondaryButton(
+                            text = "Get prompt",
+                            onClick = { showPrompt = true },
+                            modifier = Modifier.fillMaxWidth(),
+                            leadingIcon = Icons.AutoMirrored.Rounded.Notes,
+                        )
+                    }
                 }
             }
         },
@@ -166,6 +192,16 @@ fun TemplateDetailScreen(
                 onClearSlot = { index -> if (index in images.indices) images[index] = null },
             )
         }
+    }
+
+    if (showPrompt && detail != null && prompt != null) {
+        PromptBottomSheet(
+            templateTitle = detail.title,
+            prompt = prompt,
+            slots = detail.slots,
+            canGenerateHere = features.imageGeneration,
+            onDismiss = { showPrompt = false },
+        )
     }
 }
 
@@ -344,6 +380,10 @@ private val sampleDetail = TemplateDetailUi(
     slots = listOf(
         TemplateSlotUi("Selfie", "A clear, front-facing photo."),
         TemplateSlotUi("Side profile", "A photo from the side."),
+    ),
+    prompt = templatePromptOf(
+        "A moody black-and-white portrait of the uploaded person, lit by a single hard key light " +
+            "through venetian blinds. Negative Prompt: colour, cartoon, blur, watermark."
     ),
 )
 

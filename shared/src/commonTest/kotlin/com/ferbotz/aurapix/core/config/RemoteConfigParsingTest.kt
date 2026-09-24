@@ -101,6 +101,7 @@ class RemoteConfigParsingTest {
         assertTrue(c.features.creditPurchase)
         assertTrue(c.features.creations)
         assertTrue(c.features.categories)
+        assertTrue(c.features.promptSharing, "a switch today's backend doesn't send yet stays on")
         // …and an untouched section is entirely unaffected.
         assertEquals(RemoteConfig.Default.generation, c.generation)
         assertEquals(RemoteConfig.Default.links, c.links)

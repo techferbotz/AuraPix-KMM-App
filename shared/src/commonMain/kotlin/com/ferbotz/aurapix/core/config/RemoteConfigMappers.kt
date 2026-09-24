@@ -55,6 +55,7 @@ fun RemoteConfigDto?.toDomain(defaults: RemoteConfig = RemoteConfig.Default): Re
             creditPurchase = f?.creditPurchase ?: fd.creditPurchase,
             creations = f?.creations ?: fd.creations,
             categories = f?.categories ?: fd.categories,
+            promptSharing = f?.promptSharing ?: fd.promptSharing,
         ),
         update = RemoteConfig.UpdatePolicy(
             minSupportedBuild = u?.minSupportedBuild ?: ud.minSupportedBuild,

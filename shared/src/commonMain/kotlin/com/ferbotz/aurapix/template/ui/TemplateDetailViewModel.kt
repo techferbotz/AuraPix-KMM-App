@@ -51,4 +51,5 @@ private fun TemplateDetailDto.toUi() = TemplateDetailUi(
     slots = imageSlots.sortedBy { it.displayOrder }.map {
         TemplateSlotUi(title = it.title, description = it.description, exampleImageUrl = it.exampleImageUrl)
     },
+    prompt = templatePromptOf(prompt),
 )

@@ -23,6 +23,11 @@ data class TemplateDetailDto(
     val categories: List<CategorySummaryDto> = emptyList(),
     val previewImages: List<PreviewImageDto> = emptyList(),
     val imageSlots: List<ImageSlotDto> = emptyList(),
+    /**
+     * The generation prompt as the template's author wrote it — free text that may end in an
+     * inline "Negative Prompt: …" section. Shown and copied by the template's "Get prompt" sheet.
+     */
+    val prompt: String? = null,
     val version: Int = 1,
     val templateVersionId: String,
     val createdAt: String,
