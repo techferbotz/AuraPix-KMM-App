@@ -75,6 +75,8 @@ fun TemplateDetailScreen(
     modifier: Modifier = Modifier,
     state: UiState<TemplateDetailUi> = UiState.Success(sampleDetail),
     generationCost: Int = 10,
+    /** A share is being prepared (its picture is downloading): the Share button spins meanwhile. */
+    sharing: Boolean = false,
     onBack: () -> Unit = {},
     onShare: () -> Unit = {},
     onGenerate: (List<ByteArray>) -> Unit = {},
@@ -186,6 +188,7 @@ fun TemplateDetailScreen(
                 detail = state.data,
                 images = images,
                 bottomInset = innerPadding.calculateBottomPadding(),
+                sharing = sharing,
                 onBack = onBack,
                 onShare = onShare,
                 onPickSlot = { index -> pendingIndex = index; picker.pick() },
@@ -210,6 +213,7 @@ private fun DetailContent(
     detail: TemplateDetailUi,
     images: List<ByteArray?>,
     bottomInset: androidx.compose.ui.unit.Dp,
+    sharing: Boolean,
     onBack: () -> Unit,
     onShare: () -> Unit,
     onPickSlot: (Int) -> Unit,
@@ -239,7 +243,7 @@ private fun DetailContent(
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 AuraIconButton(Icons.AutoMirrored.Rounded.ArrowBack, "Back", onBack, glass = true, tint = Color.White)
-                AuraIconButton(Icons.Rounded.Share, "Share", onShare, glass = true, tint = Color.White)
+                AuraIconButton(Icons.Rounded.Share, "Share", onShare, glass = true, tint = Color.White, loading = sharing)
             }
             Column(Modifier.padding(16.dp)) {
                 if (detail.trending) StatusBadge("Trending")

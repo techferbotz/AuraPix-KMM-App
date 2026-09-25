@@ -10,8 +10,12 @@ interface ImageActions {
     /** Share the image at [url] via the platform share sheet. */
     fun share(url: String)
 
-    /** Share a plain-text link (e.g. a template URL) via the platform share sheet. */
-    fun shareLink(url: String)
+    /**
+     * Share [text] with the image at [imageUrl] attached, so chat apps show the picture with the
+     * text as its caption. Falls back to the text alone when there's no image or it can't be
+     * loaded, so the text — and any link in it — always goes out. Returns once the sheet is up.
+     */
+    suspend fun shareWithImage(text: String, imageUrl: String?)
 }
 
 /** Remembers the platform [ImageActions] (needs a [Context]/root view controller from composition). */

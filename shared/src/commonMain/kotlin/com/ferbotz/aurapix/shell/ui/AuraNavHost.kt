@@ -72,12 +72,12 @@ import com.ferbotz.aurapix.profile.ui.LoginUiState
 import com.ferbotz.aurapix.profile.ui.LoginViewModel
 import com.ferbotz.aurapix.profile.ui.ProfileViewModel
 import com.ferbotz.aurapix.template.ui.TemplateDetailViewModel
+import com.ferbotz.aurapix.template.ui.shareImageUrl
+import com.ferbotz.aurapix.template.ui.shareText
 import com.ferbotz.aurapix.core.ui.base.PagedList
 import com.ferbotz.aurapix.core.ui.base.UiState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-
-private const val TEMPLATE_SHARE_BASE = "https://aurapix.ferbotz.com/template/"
 
 @Composable
 fun AuraNavHost(
@@ -189,13 +189,30 @@ fun AuraNavHost(
                 navController.navigate(ProcessingRoute)
             }
 
+            // Sharing downloads the template's picture first. Scoped to this screen, so leaving it
+            // mid-download drops the share instead of opening the sheet over somewhere else.
             val imageActions = rememberImageActions()
+            val shareScope = rememberCoroutineScope()
+            var sharing by remember { mutableStateOf(false) }
 
             TemplateDetailScreen(
                 state = state,
                 generationCost = cost,
+                sharing = sharing,
                 onBack = { navController.popBackStack() },
-                onShare = { imageActions.shareLink("$TEMPLATE_SHARE_BASE$templateId") },
+                onShare = {
+                    val detail = (state as? UiState.Success)?.data
+                    if (detail != null && !sharing) {
+                        sharing = true
+                        shareScope.launch {
+                            try {
+                                imageActions.shareWithImage(detail.shareText(), detail.shareImageUrl)
+                            } finally {
+                                sharing = false
+                            }
+                        }
+                    }
+                },
                 onGenerate = { images ->
                     when {
                         !auth.isLoggedIn -> loginImages = images

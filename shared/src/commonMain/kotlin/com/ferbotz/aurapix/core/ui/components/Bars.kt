@@ -20,6 +20,7 @@ import androidx.compose.material.icons.rounded.Diamond
 import androidx.compose.material.icons.rounded.GridView
 import androidx.compose.material.icons.rounded.PhotoLibrary
 import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -64,7 +65,10 @@ fun CreditsBadge(
     }
 }
 
-/** Circular icon button used for back/share/etc. Optional translucent "glass" styling. */
+/**
+ * Circular icon button used for back/share/etc. Optional translucent "glass" styling. While
+ * [loading], the icon becomes a spinner and taps are ignored — for an action that takes a moment.
+ */
 @Composable
 fun AuraIconButton(
     icon: ImageVector,
@@ -73,6 +77,7 @@ fun AuraIconButton(
     modifier: Modifier = Modifier,
     glass: Boolean = false,
     tint: Color = MaterialTheme.colorScheme.onSurface,
+    loading: Boolean = false,
 ) {
     val shape = CircleShape
     val base = if (glass) {
@@ -85,10 +90,14 @@ fun AuraIconButton(
             .size(44.dp)
             .clip(shape)
             .then(base)
-            .clickable(onClick = onClick),
+            .clickable(enabled = !loading, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(icon, contentDescription, tint = tint, modifier = Modifier.size(22.dp))
+        if (loading) {
+            CircularProgressIndicator(Modifier.size(20.dp), color = tint, strokeWidth = 2.dp)
+        } else {
+            Icon(icon, contentDescription, tint = tint, modifier = Modifier.size(22.dp))
+        }
     }
 }
 

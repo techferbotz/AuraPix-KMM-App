@@ -45,6 +45,7 @@ private fun TemplateDetailDto.toUi() = TemplateDetailUi(
     thumbnailUrl = thumbnailImageUrl,
     thumbnailCompressedUrl = thumbnailCompressedUrl,
     description = longDescription?.takeIf { it.isNotBlank() } ?: shortDescription,
+    shortDescription = shortDescription,
     trending = isTrending,
     categories = categories.map { it.name },
     previewImageUrls = previewImages.sortedBy { it.displayOrder }.map { it.imageUrl },

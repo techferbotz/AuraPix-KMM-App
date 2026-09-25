@@ -3,6 +3,8 @@ package com.ferbotz.aurapix.core.media
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
@@ -16,6 +18,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.net.URL
 
@@ -45,21 +48,27 @@ private class AndroidImageActions(
             val bytes = fetch(url) ?: return@launch toast("Couldn't load image")
             val uri = withContext(Dispatchers.IO) { cacheForShare(bytes) }
                 ?: return@launch toast("Couldn't share image")
-            val send = Intent(Intent.ACTION_SEND).apply {
-                type = "image/jpeg"
-                putExtra(Intent.EXTRA_STREAM, uri)
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            }
-            appContext.startActivity(
-                Intent.createChooser(send, "Share").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            )
+            startShare(uri, text = null)
         }
     }
 
-    override fun shareLink(url: String) {
+    override suspend fun shareWithImage(text: String, imageUrl: String?) {
+        val bytes = imageUrl?.let { fetch(it) }
+        val uri = bytes?.let { withContext(Dispatchers.IO) { cacheForShare(it) } }
+        startShare(uri, text)
+    }
+
+    /** Opens the share sheet with the cached image at [imageUri] (if any) and [text] as its caption. */
+    private fun startShare(imageUri: Uri?, text: String?) {
         val send = Intent(Intent.ACTION_SEND).apply {
-            type = "text/plain"
-            putExtra(Intent.EXTRA_TEXT, url)
+            if (imageUri != null) {
+                type = "image/jpeg"
+                putExtra(Intent.EXTRA_STREAM, imageUri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            } else {
+                type = "text/plain"
+            }
+            if (text != null) putExtra(Intent.EXTRA_TEXT, text)
         }
         appContext.startActivity(
             Intent.createChooser(send, "Share").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -67,7 +76,14 @@ private class AndroidImageActions(
     }
 
     private suspend fun fetch(url: String): ByteArray? = withContext(Dispatchers.IO) {
-        runCatching { URL(url).openStream().use { it.readBytes() } }.getOrNull()
+        runCatching {
+            // Bounded, so a dead connection fails the action instead of leaving it hanging.
+            URL(url).openConnection().run {
+                connectTimeout = 10_000
+                readTimeout = 15_000
+                getInputStream().use { it.readBytes() }
+            }
+        }.getOrNull()
     }
 
     /** MediaStore insert into Pictures/AuraPix. No permission needed on API 29+. */
@@ -91,13 +107,28 @@ private class AndroidImageActions(
         true
     }.getOrDefault(false)
 
-    /** Writes to the app's cache and returns a shareable content:// uri via [FileProvider]. */
+    /**
+     * Writes the image to the app's cache as JPEG and returns a shareable content:// uri via
+     * [FileProvider]. The API serves WebP, which not every share target accepts; JPEG goes anywhere.
+     */
     private fun cacheForShare(bytes: ByteArray): Uri? = runCatching {
         val dir = File(appContext.cacheDir, "shared_images").apply { mkdirs() }
         val file = File(dir, "AuraPix_${System.currentTimeMillis()}.jpg")
-        file.writeBytes(bytes)
+        file.writeBytes(toJpeg(bytes))
         FileProvider.getUriForFile(appContext, "${appContext.packageName}.fileprovider", file)
     }.getOrNull()
+
+    /** [bytes] as JPEG: passed through when they already are one, re-encoded otherwise. */
+    private fun toJpeg(bytes: ByteArray): ByteArray {
+        val isJpeg = bytes.size > 2 && bytes[0] == 0xFF.toByte() && bytes[1] == 0xD8.toByte()
+        if (isJpeg) return bytes
+        val bitmap = checkNotNull(BitmapFactory.decodeByteArray(bytes, 0, bytes.size)) { "Not an image" }
+        return ByteArrayOutputStream().use { out ->
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 92, out)
+            bitmap.recycle()
+            out.toByteArray()
+        }
+    }
 
     private fun toast(message: String) {
         Toast.makeText(appContext, message, Toast.LENGTH_SHORT).show()

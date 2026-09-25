@@ -33,6 +33,8 @@ data class TemplateDetailUi(
     /** Smaller copy of [thumbnailUrl], already cached by the feed card that linked here. */
     val thumbnailCompressedUrl: String? = null,
     val description: String,
+    /** The API's one-line pitch, for places too small for [description] — e.g. a share caption. */
+    val shortDescription: String = "",
     val trending: Boolean = false,
     val categories: List<String> = emptyList(),
     val previewImageUrls: List<String> = emptyList(),
